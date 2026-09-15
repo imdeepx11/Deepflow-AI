@@ -1,166 +1,264 @@
-# DeepFlow AI — Intelligent Documents. Smarter Workflows.
+<p align="center">
+  <img src="https://img.shields.io/badge/DeepFlow_AI-Intelligent_Documents-00A859?style=for-the-badge&logo=data:image/svg+xml;base64,..." alt="DeepFlow AI" />
+</p>
 
-> **"Intelligent Documents. Smarter Workflows."**  
-> *AI-powered document intelligence and workflow automation for modern enterprises.*
+<h1 align="center">DeepFlow AI</h1>
+<p align="center"><strong>Intelligent Documents. Smarter Workflows.</strong></p>
+<p align="center">AI-powered document intelligence and workflow automation for modern enterprises.</p>
 
----
-
-## 🌟 Overview
-
-**DeepFlow AI** is a polished, enterprise-grade SaaS web application designed to demonstrate state-of-the-art **Intelligent Document Processing (IDP)**, **Business Process Management (BPM)**, and **AI-Assisted Decision Support**.
-
-### Core Enterprise Value Flow:
-```
-Unstructured Business Document (PDF, DOCX, TXT)
-       ↓
-AI Content Ingestion & Classification (Invoice, PO, Contract, Resume, etc.)
-       ↓
-Dynamic Field Extraction & Risk Assessment (0-100 Score + Risk Flags)
-       ↓
-SLA Priority Detection & AI Recommended Action (Signoff Roles & SLAs)
-       ↓
-Automated Rule-Based Workflow Routing & Audit Signoff
-       ↓
-Enterprise Analytics & Process Intelligence Bottleneck Insights
-```
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.12+-3776AB?style=flat-square&logo=python&logoColor=white" />
+  <img src="https://img.shields.io/badge/FastAPI-0.141-009688?style=flat-square&logo=fastapi&logoColor=white" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-4.3-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" />
+  <img src="https://img.shields.io/badge/Vite-8.3-646CFF?style=flat-square&logo=vite&logoColor=white" />
+  <img src="https://img.shields.io/badge/SQLite-Database-003B57?style=flat-square&logo=sqlite&logoColor=white" />
+  <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" />
+</p>
 
 ---
 
-## ✨ Key Features
+## Overview
 
-1. **Enterprise Aesthetic**: Strictly styled in a modern **White, Emerald Green (#00A859), and Light-Green (#DCFCE7)** enterprise UI theme.
-2. **Demo AI Mode (Zero API Key Requirement)**: Built-in deterministic smart AI analyzer that produces realistic extraction schema out-of-the-box without requiring external API keys. Supports OpenAI (GPT-4o) and Google Gemini (2.5 Flash) seamlessly when API keys are configured.
-3. **Split-Screen AI Document Analyzer**:
-   - **Left Side**: Raw extracted document text & interactive **Ask AI about this document** QA chat assistant.
-   - **Right Side**: Visual confidence meter, extracted key fields, risk index (0-100), priority reasoning, **AI Recommended Action box**, dynamic workflow progress timeline, and 3-5 point executive summaries.
-4. **Interactive Workflow Builder & Rule Engine**:
-   - Customizable workflow nodes: `Start`, `AI Analysis`, `Document Validation`, `Approval`, `Condition`, `Notification`, `Assignment`, `End`.
-   - Business Rule Builder (e.g., `IF Invoice Amount > ₹50,000 THEN Require Manager Approval`).
-5. **Formal Approval Signoff System**: Multi-role decision modal (Approve, Reject, Request Changes) with audit comment trails.
-6. **Process Intelligence Analytics**: Visual dashboards tracking automation rates, SLA compliance, document volume trends, and AI bottleneck detection insights.
-7. **Immutable Audit Logs**: Comprehensive compliance event stream filtering across user actions, AI processing steps, and approvals.
+**DeepFlow AI** is an enterprise-grade web application that demonstrates end-to-end **Intelligent Document Processing (IDP)**, **Business Process Management (BPM)**, and **AI-Assisted Decision Support**.
+
+Upload any business document — invoice, contract, purchase order, or resume — and watch the AI pipeline classify it, extract structured data, assess risk, assign priority, recommend an action, and route it through an automated approval workflow with full audit trail.
+
+```
+PDF / DOCX / TXT Upload
+        ↓
+AI Content Extraction & Classification
+        ↓
+Structured Field Extraction (vendor, amount, dates, terms)
+        ↓
+Risk Assessment (0–100 score + flags)
+        ↓
+SLA Priority Detection & AI Recommended Action
+        ↓
+Automated Workflow Routing & Human Approval
+        ↓
+Immutable Audit Log & Analytics Dashboard
+```
 
 ---
 
-## 🏗️ Architecture & Tech Stack
+## Features
 
-```
-[ Frontend: React + Vite + Tailwind CSS + Lucide + Recharts ]
-                             │  HTTP / REST
-                             ▼
-[ Backend: Python FastAPI + SQLAlchemy + SQLite (intelliflow.db) ]
-              │                      │
-   [ Document Processor ]     [ AI Service Layer ]
-  (PyMuPDF, docx, txt)      (Demo AI / OpenAI / Gemini)
-```
-
-- **Frontend**: React 19, Vite, Tailwind CSS v4, Lucide React, Recharts
-- **Backend**: Python 3.12+, FastAPI, Uvicorn, SQLAlchemy ORM, Pydantic, PyMuPDF (fitz), python-docx
-- **Database**: SQLite (`intelliflow.db`) with automatic enterprise demo seed data
-- **Security & Config**: Environment variables via `.env`, CORS middleware, input sanitization
+| Category | Details |
+|---|---|
+| **AI Document Analysis** | PDF text extraction via PyMuPDF, document classification with confidence scores, structured field extraction, risk scoring, priority detection, and AI-recommended actions |
+| **Grounded QA Chat** | Ask natural-language questions about any uploaded document — answers are grounded in the actual extracted text |
+| **Workflow Automation** | Rule-based workflow routing with configurable nodes (AI Analysis → Validation → Approval → Notification → Assignment) |
+| **Approval System** | Multi-role decision modal (Approve / Reject / Request Changes) with audit comment trails |
+| **Analytics Dashboard** | Executive KPIs, 30-day document volume trends, automation rates, SLA compliance, and process bottleneck detection |
+| **Audit Logs** | Immutable compliance event stream with filtering by action type, user, and timestamp |
+| **AI Providers** | Built-in demo mode (no API key required), Google Gemini, and OpenAI GPT-4o support |
+| **Enterprise UI** | Clean white + emerald green theme, responsive layout, Lucide icons, Recharts visualizations |
 
 ---
 
-## 🚀 Quick Setup & Run Instructions
+## Tech Stack
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Frontend                                               │
+│  React 19 · Vite 8 · Tailwind CSS 4 · Lucide · Recharts│
+└────────────────────────┬────────────────────────────────┘
+                         │ REST API (proxy via Vite)
+┌────────────────────────▼────────────────────────────────┐
+│  Backend                                                │
+│  Python 3.12 · FastAPI · Uvicorn · SQLAlchemy · Pydantic│
+│  PyMuPDF · python-docx · Google GenAI · OpenAI SDK      │
+└────────────────────────┬────────────────────────────────┘
+                         │
+┌────────────────────────▼────────────────────────────────┐
+│  Database: SQLite (auto-seeded with demo data)          │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Project Structure
+
+```
+DeepFlow-AI/
+├── main.py                  # Root entry point — starts the backend
+├── requirements.txt         # Python dependencies
+├── .env.example             # Environment variable template
+├── .gitignore
+├── README.md
+│
+├── backend/
+│   ├── app/
+│   │   ├── main.py          # FastAPI application
+│   │   ├── api/
+│   │   │   ├── auth.py      # Authentication routes
+│   │   │   ├── documents.py # Document CRUD & AI analysis
+│   │   │   ├── workflows.py # Workflow management
+│   │   │   ├── analytics.py # Dashboard analytics
+│   │   │   ├── audit_logs.py# Audit trail
+│   │   │   ├── ai_chat.py   # Grounded QA chat
+│   │   │   └── settings.py  # App settings
+│   │   ├── database/
+│   │   │   ├── database.py  # SQLAlchemy engine & session
+│   │   │   ├── models.py    # ORM models
+│   │   │   └── seed.py      # Demo data seeder
+│   │   └── services/
+│   │       ├── ai_service.py        # AI analysis logic
+│   │       └── document_processor.py # Text extraction
+│   └── uploads/             # User-uploaded files (gitignored)
+│
+└── frontend/
+    ├── package.json
+    ├── vite.config.js
+    ├── index.html
+    └── src/
+        ├── App.jsx
+        ├── api.js           # Axios/fetch API client
+        ├── components/
+        │   ├── Sidebar.jsx
+        │   ├── Header.jsx
+        │   ├── UploadModal.jsx
+        │   └── ApprovalModal.jsx
+        └── pages/
+            ├── Login.jsx
+            ├── Dashboard.jsx
+            ├── Documents.jsx
+            ├── DocumentAnalyzer.jsx
+            ├── Workflows.jsx
+            ├── Analytics.jsx
+            ├── AuditLogs.jsx
+            └── Settings.jsx
+```
+
+---
+
+## Quick Start
 
 ### Prerequisites
-- Python 3.10+
-- Node.js v18+ & npm
 
----
+- **Python** 3.10+
+- **Node.js** 18+ & npm
 
-### Step 1: Start the Backend (FastAPI)
+### 1. Clone the repository
 
-1. Open a terminal in the root directory:
-   ```bash
-   cd backend
-   ```
-2. Activate virtual environment (if using virtualenv):
-   ```bash
-   # Windows PowerShell
-   .\venv\Scripts\activate
-
-   # Linux/macOS
-   source venv/bin/activate
-   ```
-3. Run the FastAPI server:
-   ```bash
-   python -m uvicorn app.main:app --reload --port 8000
-   ```
-   *The backend will automatically create `intelliflow.db` and seed 10 realistic enterprise documents.*
-
-   - **API Base URL**: `http://127.0.0.1:8000`
-   - **Swagger Docs**: `http://127.0.0.1:8000/docs`
-
----
-
-### Step 2: Start the Frontend (Vite + React)
-
-1. Open a second terminal in the `frontend/` directory:
-   ```bash
-   cd frontend
-   ```
-2. Install dependencies (if not already installed):
-   ```bash
-   npm install
-   ```
-3. Start Vite dev server:
-   ```bash
-   npm run dev
-   ```
-4. Open your browser at:
-   ```
-   http://localhost:5173
-   ```
-
----
-
-## 🔑 Demo Account Credentials
-
-Click the **"Use Demo Account"** button on the Login page or use:
-
-- **Email**: `demo@deepflow.ai`
-- **Password**: `demo123`
-
----
-
-## ⚙️ Environment Variables (`.env.example`)
-
-```ini
-PORT=8000
-HOST=127.0.0.1
-
-# AI Provider (demo, openai, gemini)
-AI_PROVIDER=demo
-
-# Optional API Keys (Demo Mode active by default)
-OPENAI_API_KEY=
-GEMINI_API_KEY=
-
-DATABASE_URL=sqlite:///intelliflow.db
+```bash
+git clone https://github.com/imdeepx11/Deepflow-AI.git
+cd Deepflow-AI
 ```
 
+### 2. Set up the backend
+
+```bash
+# Create and activate virtual environment
+python -m venv venv
+
+# Windows PowerShell
+.\venv\Scripts\Activate.ps1
+
+# macOS / Linux
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### 3. Configure environment (optional)
+
+```bash
+cp .env.example .env
+# Edit .env to add your Gemini or OpenAI API key (optional — demo mode works without it)
+```
+
+### 4. Start the backend
+
+```bash
+python main.py
+```
+
+The API server starts at **http://127.0.0.1:8000** with auto-reload enabled.
+- Swagger docs: **http://127.0.0.1:8000/docs**
+
+### 5. Start the frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open **http://localhost:5173** in your browser.
+
 ---
 
-## 📋 Recommended Interview Demo Flow
+## Demo Credentials
 
-To demonstrate DeepFlow AI effectively to a product/engineering team (e.g. Newgen Software):
+Click **"Use Demo Account"** on the login page, or enter manually:
 
-1. **Login**: Click **"Use Demo Account"** to sign in instantly.
-2. **Dashboard Overview**: Show executive KPIs (+18.4% processed), 30-day volume chart, and recent documents stream.
-3. **Upload Document**: Click **"Upload Document"**, drop a sample PDF/Invoice, and click **"Analyze with AI"**.
-4. **Inspect AI Analyzer**:
-   - Point out **AI Classification** (Invoice 96% confidence).
-   - Review **Extracted Key Fields** (Vendor, Amount, Tax, Due Date, Payment Status).
-   - Inspect **AI Risk Score** and risk verification flags.
-   - Highlight **AI Recommended Action** card ("ARCHIVE / RECORD KEEPING").
-   - Demo **Ask AI about this document** QA chat ("What is the total amount?").
-5. **Submit Workflow Approval**: Click **"Approve"**, add audit comments, and confirm.
-6. **Workflow Timeline**: Observe active step moving to **Completed**.
-7. **Analytics**: Open **Analytics** page to demonstrate **Process Intelligence Bottleneck Insights**.
-8. **Audit Trail**: Open **Audit Logs** to show that every action was recorded with timestamps and user roles.
+| Field | Value |
+|---|---|
+| Email | `demo@deepflow.ai` |
+| Password | `demo123` |
 
 ---
 
-## 📄 License
-Enterprise MIT License — DeepFlow AI 2026.
+## Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `8000` | Backend server port |
+| `HOST` | `127.0.0.1` | Backend server host |
+| `AI_PROVIDER` | `demo` | AI engine: `demo`, `gemini`, or `openai` |
+| `GEMINI_API_KEY` | — | Google Gemini API key (required if `AI_PROVIDER=gemini`) |
+| `OPENAI_API_KEY` | — | OpenAI API key (required if `AI_PROVIDER=openai`) |
+| `DATABASE_URL` | `sqlite:///intelliflow.db` | SQLAlchemy database connection string |
+
+---
+
+## Demo Walkthrough
+
+> Recommended flow when presenting DeepFlow AI in an interview or product demo.
+
+1. **Login** → Click "Use Demo Account" for instant access
+2. **Dashboard** → Show executive KPIs, 30-day volume chart, and recent documents
+3. **Documents** → Browse the pre-seeded document library
+4. **Upload** → Upload a sample PDF invoice
+5. **AI Analyzer** → Click "Analyze with AI" and walk through:
+   - Document classification with confidence score
+   - Extracted fields (vendor, invoice number, amounts, dates, payment status)
+   - Risk assessment score and flags
+   - AI recommended action
+   - Grounded QA chat ("What is the total amount?", "When is the due date?")
+6. **Approval** → Submit an approval decision with comments
+7. **Workflows** → Observe the workflow timeline update
+8. **Analytics** → Show process intelligence and bottleneck insights
+9. **Audit Logs** → Demonstrate the immutable compliance trail
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/auth/login` | User authentication |
+| `GET` | `/api/auth/me` | Get current user |
+| `GET` | `/api/documents` | List all documents |
+| `POST` | `/api/documents/upload` | Upload a document |
+| `POST` | `/api/documents/{id}/analyze` | Trigger AI analysis |
+| `GET` | `/api/workflows` | List workflows |
+| `POST` | `/api/workflows/{id}/approve` | Submit approval decision |
+| `GET` | `/api/analytics/dashboard` | Dashboard statistics |
+| `GET` | `/api/audit-logs` | Audit log entries |
+| `POST` | `/api/ai-chat` | Grounded QA chat |
+
+---
+
+## License
+
+MIT License — DeepFlow AI © 2026
+
+---
+
+<p align="center">
+  Built by <strong>Deepak Gupta</strong>
+</p>
