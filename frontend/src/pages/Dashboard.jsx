@@ -442,8 +442,14 @@ export default function Dashboard({ user, onNavigateToAnalyzer, onNavigateToDocu
             </tbody>
           </table>
       {/* Small Developer Attribution Note (Main Dashboard Only) */}
-      <div className="pt-4 border-t border-[#E2E8F0] dark:border-[#242424] text-[10px] text-[#94A3B8] dark:text-[#64748B] font-medium">
-        Developed by Deepak Gupta
+      <div className="pt-4 border-t border-[#E2E8F0] dark:border-[#242424] flex items-center justify-between text-xs text-[#94A3B8] dark:text-[#64748B]">
+        <div className="flex items-center gap-1.5 font-medium">
+          <span>Designed and Developed by</span>
+          <span className="font-semibold text-[#0F172A] dark:text-[#E2E8F0] bg-[#F1F5F9] dark:bg-[#1E293B] px-2 py-0.5 rounded-md border border-[#E2E8F0] dark:border-[#334155] text-[11px]">
+            Deepak Gupta
+          </span>
+        </div>
+        <span className="text-[10px] text-[#94A3B8] dark:text-[#475569]">DeepFlow AI v2.5</span>
       </div>
     </div>
   );
