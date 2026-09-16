@@ -18,11 +18,11 @@ def seed_db():
 
     # Create admin user
     user = User(
-        name="Deepak Gupta",
+        name="Demo Administrator",
         email="demo@deepflow.ai",
         role="Admin",
         department="Operations",
-        avatar="/admin_avatar.jpg"
+        avatar=""
     )
     db.add(user)
     db.commit()

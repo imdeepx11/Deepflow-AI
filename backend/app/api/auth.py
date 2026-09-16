@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.database.database import get_db
-from app.database.models import User
+from app.database.models import User, AuditLog
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -19,11 +19,11 @@ def name_from_email(email: str) -> str:
 
 @router.post("/login")
 def login(req: LoginRequest, db: Session = Depends(get_db)):
-    email_clean = req.email.strip().lower() if req.email else "user@deepflow.ai"
+    email_clean = req.email.strip().lower() if req.email else "demo@deepflow.ai"
     user = db.query(User).filter(User.email == email_clean).first()
     
     if not user:
-        derived_name = "Enterprise Admin" if "demo" in email_clean or "admin" in email_clean else name_from_email(email_clean)
+        derived_name = "Demo Administrator" if "demo" in email_clean or "admin" in email_clean else name_from_email(email_clean)
         role = "Admin" if "admin" in email_clean or "demo" in email_clean else "User"
         user = User(
             name=derived_name,
@@ -34,6 +34,24 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
         db.add(user)
         db.commit()
         db.refresh(user)
+    elif user.name == "Deepak Gupta" and email_clean == "demo@deepflow.ai":
+        # Rename default demo account to Demo Administrator
+        user.name = "Demo Administrator"
+        db.commit()
+
+    # Store login audit record
+    try:
+        audit_entry = AuditLog(
+            user_id=user.id,
+            user_name=user.name,
+            action="USER_LOGIN",
+            details=f"User signed in via email: {user.email}",
+            ip_address="127.0.0.1"
+        )
+        db.add(audit_entry)
+        db.commit()
+    except Exception as e:
+        print(f"Error logging audit sign-in: {e}")
 
     return {
         "token": "demo-jwt-token-deepflow-2026",
@@ -51,7 +69,7 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
 def me(db: Session = Depends(get_db)):
     user = db.query(User).first()
     if not user:
-        user = User(name="Enterprise Admin", email="demo@deepflow.ai", role="Admin", department="Operations")
+        user = User(name="Demo Administrator", email="demo@deepflow.ai", role="Admin", department="Operations")
         db.add(user)
         db.commit()
         db.refresh(user)

@@ -129,6 +129,7 @@ export default function App() {
         isOpen={uploadModalOpen}
         onClose={() => setUploadModalOpen(false)}
         onUploadSuccess={handleUploadSuccess}
+        user={user}
       />
     </div>
   );
