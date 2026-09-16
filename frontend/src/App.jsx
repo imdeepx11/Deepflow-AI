@@ -19,13 +19,8 @@ export default function App() {
   const [selectedDocId, setSelectedDocId] = useState(1);
   const [theme, setTheme] = useState(localStorage.getItem('deepflow_theme') || localStorage.getItem('intelliflow_theme') || 'dark');
 
-  useEffect(() => {
-    // Check if demo user is stored
-    const savedUser = localStorage.getItem('deepflow_user') || localStorage.getItem('intelliflow_user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-  }, []);
+  // Initialize user as null so visitors always land on the Login page first
+
 
   useEffect(() => {
     if (theme === 'light') {
