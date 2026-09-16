@@ -63,9 +63,8 @@ export default function Sidebar({ currentPage, setCurrentPage, user, onLogout })
         })}
       </nav>
 
-      {/* Bottom User Profile & Creator Attribution Card */}
-      <div className="p-4 space-y-3 border-t border-[#E2E8F0] dark:border-[#242424] bg-[#F8FAFC] dark:bg-[#121212]">
-        {/* User Profile */}
+      {/* Bottom User Profile Section */}
+      <div className="p-4 border-t border-[#E2E8F0] dark:border-[#242424] bg-[#F8FAFC] dark:bg-[#121212]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5 overflow-hidden">
             {user?.avatar ? (
@@ -91,25 +90,6 @@ export default function Sidebar({ currentPage, setCurrentPage, user, onLogout })
           >
             <LogOut className="w-4 h-4" />
           </button>
-        </div>
-
-        {/* Creator Attribution Card in Left Corner */}
-        <div className="bg-[#DCFCE7] dark:bg-[#00A859]/15 p-3 rounded-xl border border-[#BBF7D0] dark:border-[#00A859]/30 flex items-center gap-2.5">
-          <img 
-            src="/admin_avatar.jpg" 
-            alt="Deepak Gupta" 
-            className="w-8 h-8 rounded-full object-cover border border-[#00A859] shrink-0"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = 'https://ui-avatars.com/api/?name=Deepak+Gupta&background=00A859&color=fff';
-            }}
-          />
-          <div>
-            <h4 className="text-xs font-extrabold text-[#15803D] dark:text-[#4ADE80]">Deepak Gupta</h4>
-            <p className="text-[10px] text-[#166534] dark:text-[#86EFAC] font-medium leading-tight">
-              Designed & Architected
-            </p>
-          </div>
         </div>
       </div>
     </aside>
