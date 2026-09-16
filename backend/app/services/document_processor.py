@@ -1,5 +1,5 @@
 import os
-import fitz  # PyMuPDF
+import pymupdf as fitz  # PyMuPDF
 import docx
 
 class DocumentProcessor:
