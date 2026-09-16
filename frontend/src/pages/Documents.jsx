@@ -240,6 +240,7 @@ export default function Documents({ user, onNavigateToAnalyzer, onOpenUpload }) 
             </tbody>
           </table>
         </div>
+      </div>
     </div>
   );
 }
