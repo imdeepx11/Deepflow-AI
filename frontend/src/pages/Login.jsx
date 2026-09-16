@@ -8,12 +8,31 @@ export default function Login({ onLoginSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const isValidEmail = (emailStr) => {
+    // Regex for standard email format username@domain.extension (e.g. user@gmail.com, name@company.org)
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(emailStr);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+
+    const cleanEmail = email.trim();
+
+    if (!cleanEmail) {
+      setError('Please enter your email address.');
+      return;
+    }
+
+    if (!isValidEmail(cleanEmail)) {
+      setError('Please enter a valid email address (e.g., name@gmail.com or name@company.com).');
+      return;
+    }
+
+    setLoading(true);
     try {
-      const res = await api.login({ email, password });
+      const res = await api.login({ email: cleanEmail, password });
       onLoginSuccess(res.user);
     } catch (err) {
       setError(err.message || 'Login failed');

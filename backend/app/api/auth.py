@@ -4,11 +4,15 @@ from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.database.models import User, AuditLog
 
+import re
+
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 class LoginRequest(BaseModel):
     email: str
     password: str
+
+EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
 
 def name_from_email(email: str) -> str:
     if not email or "@" not in email:
@@ -19,7 +23,14 @@ def name_from_email(email: str) -> str:
 
 @router.post("/login")
 def login(req: LoginRequest, db: Session = Depends(get_db)):
-    email_clean = req.email.strip().lower() if req.email else "demo@deepflow.ai"
+    if not req.email or not req.email.strip():
+        raise HTTPException(status_code=400, detail="Email address is required.")
+
+    email_clean = req.email.strip().lower()
+    
+    if not EMAIL_REGEX.match(email_clean):
+        raise HTTPException(status_code=400, detail="Invalid email format. Please provide a valid email address (e.g. name@gmail.com).")
+
     user = db.query(User).filter(User.email == email_clean).first()
     
     if not user:
