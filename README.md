@@ -7,6 +7,7 @@
 <p align="center">AI-powered document intelligence and workflow automation for modern enterprises.</p>
 
 <p align="center">
+  <a href="https://deepflow-ai-cbyu-git-main-imdeepx11.vercel.app"><strong>✨ Live Website</strong></a> •
   <a href="https://deepflow-ai-2.onrender.com/docs"><strong>🌐 Live API & Swagger Docs</strong></a> •
   <a href="https://github.com/imdeepx11/Deepflow-AI"><strong>📦 GitHub Repository</strong></a>
 </p>
@@ -25,9 +26,9 @@
 
 ## 🚀 Live Cloud Deployment Links
 
+- **Frontend Web Application (Vercel)**: [https://deepflow-ai-cbyu-git-main-imdeepx11.vercel.app](https://deepflow-ai-cbyu-git-main-imdeepx11.vercel.app)
 - **Backend API (Render)**: [https://deepflow-ai-2.onrender.com](https://deepflow-ai-2.onrender.com)
 - **FastAPI Interactive Docs**: [https://deepflow-ai-2.onrender.com/docs](https://deepflow-ai-2.onrender.com/docs)
-- **Frontend App**: Deployed via Vercel (connect your Vercel project to `imdeepx11/Deepflow-AI`)
 
 ### 🔑 Instant Demo Account Credentials
 - **Email**: `demo@deepflow.ai`
