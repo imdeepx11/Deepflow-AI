@@ -441,7 +441,9 @@ export default function Dashboard({ user, onNavigateToAnalyzer, onNavigateToDocu
               })}
             </tbody>
           </table>
-        </div>
+      {/* Small Developer Attribution Note (Main Dashboard Only) */}
+      <div className="pt-4 border-t border-[#E2E8F0] dark:border-[#242424] text-[10px] text-[#94A3B8] dark:text-[#64748B] font-medium">
+        Developed by Deepak Gupta
       </div>
     </div>
   );
