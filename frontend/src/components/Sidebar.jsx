@@ -8,8 +8,7 @@ import {
   ShieldCheck, 
   Settings, 
   LogOut, 
-  Sparkles,
-  Lightbulb
+  Sparkles
 } from 'lucide-react';
 
 export default function Sidebar({ currentPage, setCurrentPage, user, onLogout }) {
@@ -51,7 +50,7 @@ export default function Sidebar({ currentPage, setCurrentPage, user, onLogout })
             <button
               key={item.id}
               onClick={() => setCurrentPage(item.id)}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer ${
                 isActive
                   ? 'bg-[#DCFCE7] dark:bg-[#00A859]/20 text-[#15803D] dark:text-[#4ADE80]'
                   : 'text-[#475569] dark:text-[#A1A1AA] hover:text-[#0F172A] dark:hover:text-white hover:bg-[#F1F5F9] dark:hover:bg-[#1A1A1A]'
@@ -64,7 +63,7 @@ export default function Sidebar({ currentPage, setCurrentPage, user, onLogout })
         })}
       </nav>
 
-      {/* Bottom User Profile & Promo Card */}
+      {/* Bottom User Profile & Creator Attribution Card */}
       <div className="p-4 space-y-3 border-t border-[#E2E8F0] dark:border-[#242424] bg-[#F8FAFC] dark:bg-[#121212]">
         {/* User Profile */}
         <div className="flex items-center justify-between">
@@ -88,19 +87,27 @@ export default function Sidebar({ currentPage, setCurrentPage, user, onLogout })
           <button
             onClick={onLogout}
             title="Sign Out"
-            className="p-1.5 text-[#64748B] dark:text-[#A1A1AA] hover:text-[#EF4444] dark:hover:text-[#EF4444] hover:bg-[#E2E8F0] dark:hover:bg-[#242424] rounded-lg transition-colors"
+            className="p-1.5 text-[#64748B] dark:text-[#A1A1AA] hover:text-[#EF4444] dark:hover:text-[#EF4444] hover:bg-[#E2E8F0] dark:hover:bg-[#242424] rounded-lg transition-colors cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Green Promo Banner Card */}
-        <div className="bg-[#DCFCE7] dark:bg-[#00A859]/15 p-3 rounded-xl border border-[#BBF7D0] dark:border-[#00A859]/30 flex items-start gap-2.5">
-          <Lightbulb className="w-5 h-5 text-[#15803D] dark:text-[#4ADE80] shrink-0 mt-0.5" />
+        {/* Creator Attribution Card in Left Corner */}
+        <div className="bg-[#DCFCE7] dark:bg-[#00A859]/15 p-3 rounded-xl border border-[#BBF7D0] dark:border-[#00A859]/30 flex items-center gap-2.5">
+          <img 
+            src="/admin_avatar.jpg" 
+            alt="Deepak Gupta" 
+            className="w-8 h-8 rounded-full object-cover border border-[#00A859] shrink-0"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = 'https://ui-avatars.com/api/?name=Deepak+Gupta&background=00A859&color=fff';
+            }}
+          />
           <div>
-            <h4 className="text-xs font-bold text-[#15803D] dark:text-[#4ADE80]">AI-Powered Automation</h4>
-            <p className="text-[10px] text-[#166534] dark:text-[#86EFAC] leading-relaxed mt-0.5">
-              Smarter documents. Faster decisions. Greater impact.
+            <h4 className="text-xs font-extrabold text-[#15803D] dark:text-[#4ADE80]">Deepak Gupta</h4>
+            <p className="text-[10px] text-[#166534] dark:text-[#86EFAC] font-medium leading-tight">
+              Designed & Architected
             </p>
           </div>
         </div>
