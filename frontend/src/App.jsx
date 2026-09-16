@@ -23,10 +23,11 @@ export default function App() {
 
 
   useEffect(() => {
-    if (theme === 'light') {
-      document.body.classList.add('light-mode');
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
     } else {
-      document.body.classList.remove('light-mode');
+      root.classList.remove('dark');
     }
     localStorage.setItem('deepflow_theme', theme);
   }, [theme]);
@@ -71,7 +72,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#F8FAFC] text-[#0F172A] transition-colors">
+    <div className="flex min-h-screen bg-[#F8FAFC] dark:bg-[#050505] text-[#0F172A] dark:text-[#F5F5F5] transition-colors">
       {/* Persistent Enterprise Sidebar */}
       <Sidebar
         currentPage={currentPage}
