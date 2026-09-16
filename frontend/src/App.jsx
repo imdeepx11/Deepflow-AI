@@ -76,7 +76,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#050505] text-[#F5F5F5] transition-colors">
+    <div className="flex min-h-screen bg-[#F8FAFC] text-[#0F172A] transition-colors">
       {/* Persistent Enterprise Sidebar */}
       <Sidebar
         currentPage={currentPage}
