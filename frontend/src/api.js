@@ -1,4 +1,4 @@
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export async function fetchApi(endpoint, options = {}) {
   try {
@@ -32,7 +32,7 @@ export const api = {
   },
   getDocument: (id) => fetchApi(`/documents/${id}`),
   uploadDocument: (formData) => {
-    return fetch('/api/documents/upload', {
+    return fetch(`${API_BASE}/documents/upload`, {
       method: 'POST',
       body: formData,
     }).then(res => {
