@@ -7,6 +7,11 @@
 <p align="center">AI-powered document intelligence and workflow automation for modern enterprises.</p>
 
 <p align="center">
+  <a href="https://deepflow-ai-2.onrender.com/docs"><strong>🌐 Live API & Swagger Docs</strong></a> •
+  <a href="https://github.com/imdeepx11/Deepflow-AI"><strong>📦 GitHub Repository</strong></a>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/Python-3.12+-3776AB?style=flat-square&logo=python&logoColor=white" />
   <img src="https://img.shields.io/badge/FastAPI-0.141-009688?style=flat-square&logo=fastapi&logoColor=white" />
   <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" />
@@ -15,6 +20,18 @@
   <img src="https://img.shields.io/badge/SQLite-Database-003B57?style=flat-square&logo=sqlite&logoColor=white" />
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" />
 </p>
+
+---
+
+## 🚀 Live Cloud Deployment Links
+
+- **Backend API (Render)**: [https://deepflow-ai-2.onrender.com](https://deepflow-ai-2.onrender.com)
+- **FastAPI Interactive Docs**: [https://deepflow-ai-2.onrender.com/docs](https://deepflow-ai-2.onrender.com/docs)
+- **Frontend App**: Deployed via Vercel (connect your Vercel project to `imdeepx11/Deepflow-AI`)
+
+### 🔑 Instant Demo Account Credentials
+- **Email**: `demo@deepflow.ai`
+- **Password**: `demo123`
 
 ---
 
@@ -84,56 +101,36 @@ Immutable Audit Log & Analytics Dashboard
 DeepFlow-AI/
 ├── main.py                  # Root entry point — starts the backend
 ├── requirements.txt         # Python dependencies
+├── render.yaml              # Render zero-config blueprint
 ├── .env.example             # Environment variable template
 ├── .gitignore
 ├── README.md
 │
 ├── backend/
+│   ├── main.py              # Cloud production entrypoint
+│   ├── requirements.txt     # Backend dependencies
 │   ├── app/
 │   │   ├── main.py          # FastAPI application
-│   │   ├── api/
-│   │   │   ├── auth.py      # Authentication routes
-│   │   │   ├── documents.py # Document CRUD & AI analysis
-│   │   │   ├── workflows.py # Workflow management
-│   │   │   ├── analytics.py # Dashboard analytics
-│   │   │   ├── audit_logs.py# Audit trail
-│   │   │   ├── ai_chat.py   # Grounded QA chat
-│   │   │   └── settings.py  # App settings
-│   │   ├── database/
-│   │   │   ├── database.py  # SQLAlchemy engine & session
-│   │   │   ├── models.py    # ORM models
-│   │   │   └── seed.py      # Demo data seeder
-│   │   └── services/
-│   │       ├── ai_service.py        # AI analysis logic
-│   │       └── document_processor.py # Text extraction
+│   │   ├── api/             # REST endpoint routers
+│   │   ├── database/        # Database models & seeding
+│   │   └── services/        # AI Service & Document Extractor
 │   └── uploads/             # User-uploaded files (gitignored)
 │
 └── frontend/
     ├── package.json
     ├── vite.config.js
+    ├── vercel.json          # Vercel deployment configuration
     ├── index.html
     └── src/
         ├── App.jsx
-        ├── api.js           # Axios/fetch API client
+        ├── api.js           # API client
         ├── components/
-        │   ├── Sidebar.jsx
-        │   ├── Header.jsx
-        │   ├── UploadModal.jsx
-        │   └── ApprovalModal.jsx
         └── pages/
-            ├── Login.jsx
-            ├── Dashboard.jsx
-            ├── Documents.jsx
-            ├── DocumentAnalyzer.jsx
-            ├── Workflows.jsx
-            ├── Analytics.jsx
-            ├── AuditLogs.jsx
-            └── Settings.jsx
 ```
 
 ---
 
-## Quick Start
+## Quick Start (Local Development)
 
 ### Prerequisites
 
@@ -163,14 +160,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. Configure environment (optional)
-
-```bash
-cp .env.example .env
-# Edit .env to add your Gemini or OpenAI API key (optional — demo mode works without it)
-```
-
-### 4. Start the backend
+### 3. Start the backend
 
 ```bash
 python main.py
@@ -179,7 +169,7 @@ python main.py
 The API server starts at **http://127.0.0.1:8000** with auto-reload enabled.
 - Swagger docs: **http://127.0.0.1:8000/docs**
 
-### 5. Start the frontend
+### 4. Start the frontend
 
 ```bash
 cd frontend
@@ -191,33 +181,7 @@ Open **http://localhost:5173** in your browser.
 
 ---
 
-## Demo Credentials
-
-Click **"Use Demo Account"** on the login page, or enter manually:
-
-| Field | Value |
-|---|---|
-| Email | `demo@deepflow.ai` |
-| Password | `demo123` |
-
----
-
-## Environment Variables
-
-| Variable | Default | Description |
-|---|---|---|
-| `PORT` | `8000` | Backend server port |
-| `HOST` | `127.0.0.1` | Backend server host |
-| `AI_PROVIDER` | `demo` | AI engine: `demo`, `gemini`, or `openai` |
-| `GEMINI_API_KEY` | — | Google Gemini API key (required if `AI_PROVIDER=gemini`) |
-| `OPENAI_API_KEY` | — | OpenAI API key (required if `AI_PROVIDER=openai`) |
-| `DATABASE_URL` | `sqlite:///intelliflow.db` | SQLAlchemy database connection string |
-
----
-
 ## Demo Walkthrough
-
-> Recommended flow when presenting DeepFlow AI in an interview or product demo.
 
 1. **Login** → Click "Use Demo Account" for instant access
 2. **Dashboard** → Show executive KPIs, 30-day volume chart, and recent documents
@@ -233,23 +197,6 @@ Click **"Use Demo Account"** on the login page, or enter manually:
 7. **Workflows** → Observe the workflow timeline update
 8. **Analytics** → Show process intelligence and bottleneck insights
 9. **Audit Logs** → Demonstrate the immutable compliance trail
-
----
-
-## API Endpoints
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/auth/login` | User authentication |
-| `GET` | `/api/auth/me` | Get current user |
-| `GET` | `/api/documents` | List all documents |
-| `POST` | `/api/documents/upload` | Upload a document |
-| `POST` | `/api/documents/{id}/analyze` | Trigger AI analysis |
-| `GET` | `/api/workflows` | List workflows |
-| `POST` | `/api/workflows/{id}/approve` | Submit approval decision |
-| `GET` | `/api/analytics/dashboard` | Dashboard statistics |
-| `GET` | `/api/audit-logs` | Audit log entries |
-| `POST` | `/api/ai-chat` | Grounded QA chat |
 
 ---
 
