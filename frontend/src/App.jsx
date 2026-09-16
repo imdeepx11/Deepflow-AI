@@ -103,6 +103,7 @@ export default function App() {
 
           {currentPage === 'documents' && (
             <Documents
+              user={user}
               onNavigateToAnalyzer={handleNavigateToAnalyzer}
               onOpenUpload={() => setUploadModalOpen(true)}
             />

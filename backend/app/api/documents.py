@@ -28,9 +28,12 @@ def list_documents(
     status: Optional[str] = None,
     priority: Optional[str] = None,
     search: Optional[str] = None,
+    uploaded_by: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     query = db.query(Document)
+    if uploaded_by and uploaded_by != "All" and "demo" not in uploaded_by.lower() and "admin" not in uploaded_by.lower():
+        query = query.filter(Document.uploaded_by.ilike(f"%{uploaded_by}%"))
     if doc_type and doc_type != "All":
         query = query.join(DocumentAnalysis, isouter=True).filter(DocumentAnalysis.document_type == doc_type)
     if status and status != "All":
