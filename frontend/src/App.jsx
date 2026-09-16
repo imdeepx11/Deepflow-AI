@@ -93,6 +93,7 @@ export default function App() {
         <main className="flex-1 overflow-y-auto">
           {currentPage === 'dashboard' && (
             <Dashboard
+              user={user}
               onNavigateToAnalyzer={handleNavigateToAnalyzer}
               onNavigateToDocuments={() => setCurrentPage('documents')}
               onOpenUpload={() => setUploadModalOpen(true)}

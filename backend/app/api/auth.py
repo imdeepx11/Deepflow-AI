@@ -10,13 +10,27 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+def name_from_email(email: str) -> str:
+    if not email or "@" not in email:
+        return "User"
+    prefix = email.split("@")[0]
+    parts = [p.capitalize() for p in prefix.replace(".", " ").replace("_", " ").replace("-", " ").split()]
+    return " ".join(parts) if parts else "User"
+
 @router.post("/login")
 def login(req: LoginRequest, db: Session = Depends(get_db)):
-    # Support demo login or any valid login
-    user = db.query(User).filter(User.email == req.email).first()
+    email_clean = req.email.strip().lower() if req.email else "user@deepflow.ai"
+    user = db.query(User).filter(User.email == email_clean).first()
+    
     if not user:
-        # Create default admin user if not existing
-        user = User(name="Deepak Gupta", email=req.email, role="Admin", department="Operations")
+        derived_name = "Enterprise Admin" if "demo" in email_clean or "admin" in email_clean else name_from_email(email_clean)
+        role = "Admin" if "admin" in email_clean or "demo" in email_clean else "User"
+        user = User(
+            name=derived_name,
+            email=email_clean,
+            role=role,
+            department="Operations"
+        )
         db.add(user)
         db.commit()
         db.refresh(user)
@@ -37,7 +51,7 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
 def me(db: Session = Depends(get_db)):
     user = db.query(User).first()
     if not user:
-        user = User(name="Deepak Gupta", email="demo@deepflow.ai", role="Admin", department="Operations")
+        user = User(name="Enterprise Admin", email="demo@deepflow.ai", role="Admin", department="Operations")
         db.add(user)
         db.commit()
         db.refresh(user)

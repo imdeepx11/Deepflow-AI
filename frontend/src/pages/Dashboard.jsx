@@ -8,6 +8,7 @@ import {
   TrendingDown, 
   ArrowRight, 
   Sun,
+  Moon,
   Plus,
   Settings,
   MoreVertical,
@@ -27,7 +28,7 @@ import {
 } from 'recharts';
 import { api } from '../api';
 
-export default function Dashboard({ onNavigateToAnalyzer, onNavigateToDocuments, onOpenUpload }) {
+export default function Dashboard({ user, onNavigateToAnalyzer, onNavigateToDocuments, onOpenUpload }) {
   const [timeframe, setTimeframe] = useState('30d');
   const [analytics, setAnalytics] = useState(null);
   const [documents, setDocuments] = useState([]);
@@ -45,13 +46,38 @@ export default function Dashboard({ onNavigateToAnalyzer, onNavigateToDocuments,
         api.getDocuments()
       ]);
       setAnalytics(analyticsData);
-      setDocuments(docsData.slice(0, 5)); // Recent 5 documents like mockup
+      setDocuments(docsData.slice(0, 5));
     } catch (err) {
       console.error("Dashboard data load error:", err);
     } finally {
       setLoading(false);
     }
   };
+
+  const getGreetingData = () => {
+    const hour = new Date().getHours();
+    let timeOfDay = 'morning';
+    let isSun = true;
+
+    if (hour >= 12 && hour < 17) {
+      timeOfDay = 'afternoon';
+      isSun = true;
+    } else if (hour >= 17 && hour < 21) {
+      timeOfDay = 'evening';
+      isSun = false;
+    } else if (hour >= 21 || hour < 5) {
+      timeOfDay = 'night';
+      isSun = false;
+    }
+
+    const userName = user?.name || (user?.email ? user.email.split('@')[0] : 'User');
+    return {
+      text: `Good ${timeOfDay}, ${userName}!`,
+      isSun
+    };
+  };
+
+  const greeting = getGreetingData();
 
   const kpiList = [
     {
@@ -71,32 +97,32 @@ export default function Dashboard({ onNavigateToAnalyzer, onNavigateToDocuments,
       icon: Clock
     },
     {
-      title: 'High Priority',
-      value: analytics?.kpis?.high_priority ?? 4,
-      change: '+2',
-      period: 'vs last week',
-      isPositive: false,
+      title: 'Flagged for Risk',
+      value: analytics?.kpis?.flagged_risk ?? 1,
+      change: '-12.0%',
+      period: 'vs last month',
+      isPositive: true,
       icon: AlertTriangle
     },
     {
       title: 'Automation Rate',
-      value: analytics?.kpis?.automation_rate ?? '74%',
-      change: '+5.8%',
+      value: `${analytics?.kpis?.automation_rate ?? 91}%`,
+      change: '+4.5%',
       period: 'vs last month',
       isPositive: true,
       icon: Zap
     },
     {
-      title: 'Average Processing Time',
-      value: analytics?.kpis?.avg_processing_time ?? '2.4 min',
-      change: '-42 sec',
+      title: 'Avg Processing SLA',
+      value: analytics?.kpis?.avg_sla ?? '1.2m',
+      change: '-25.0%',
       period: 'vs last month',
       isPositive: true,
-      icon: BarChart3
+      icon: TrendingUp
     }
   ];
 
-  const chartData = [
+  const volumeChartData = analytics?.volume_trend || [
     { date: 'Aug 16', processed: 35 },
     { date: 'Aug 23', processed: 58 },
     { date: 'Aug 30', processed: 72 },
@@ -113,22 +139,26 @@ export default function Dashboard({ onNavigateToAnalyzer, onNavigateToDocuments,
   ];
 
   return (
-    <div className="p-8 space-y-6 max-w-[1400px] mx-auto bg-[#F8FAFC]">
+    <div className="p-8 space-y-6 max-w-[1400px] mx-auto bg-[#F8FAFC] dark:bg-[#050505] transition-colors">
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#DCFCE7] flex items-center justify-center text-[#00A859] shrink-0">
-            <Sun className="w-6 h-6 text-[#00A859]" />
+          <div className="w-10 h-10 rounded-full bg-[#DCFCE7] dark:bg-[#00A859]/20 flex items-center justify-center text-[#00A859] shrink-0">
+            {greeting.isSun ? (
+              <Sun className="w-6 h-6 text-[#00A859]" />
+            ) : (
+              <Moon className="w-6 h-6 text-[#6366F1]" />
+            )}
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold text-[#0F172A] tracking-tight">Good morning, Deepak!</h1>
-            <p className="text-xs text-[#64748B] font-medium">Here's what's happening across your document workflows.</p>
+            <h1 className="text-2xl font-extrabold text-[#0F172A] dark:text-[#F5F5F5] tracking-tight">{greeting.text}</h1>
+            <p className="text-xs text-[#64748B] dark:text-[#A1A1AA] font-medium">Here's what's happening across your document workflows.</p>
           </div>
         </div>
 
         <button
           onClick={onOpenUpload}
-          className="flex items-center gap-2 bg-[#00A859] hover:bg-[#059669] text-white font-bold text-xs px-5 py-2.5 rounded-xl transition-all shadow-md active:scale-95"
+          className="flex items-center gap-2 bg-[#00A859] hover:bg-[#059669] text-white font-bold text-xs px-5 py-2.5 rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
         >
           <Plus className="w-4 h-4 stroke-[3]" />
           <span>Upload Document</span>
@@ -142,25 +172,25 @@ export default function Dashboard({ onNavigateToAnalyzer, onNavigateToDocuments,
           return (
             <div
               key={idx}
-              className="bg-white border border-[#E2E8F0] p-4 rounded-2xl shadow-2xs space-y-3 hover:border-[#00A859]/50 transition-all group"
+              className="bg-white dark:bg-[#0D0D0D] border border-[#E2E8F0] dark:border-[#242424] p-4 rounded-2xl shadow-2xs space-y-3 hover:border-[#00A859]/50 transition-all group"
             >
               <div className="flex items-center justify-between">
-                <div className="w-8 h-8 rounded-lg bg-[#DCFCE7] flex items-center justify-center text-[#00A859]">
+                <div className="w-8 h-8 rounded-lg bg-[#DCFCE7] dark:bg-[#00A859]/20 flex items-center justify-center text-[#00A859]">
                   <Icon className="w-4 h-4 text-[#00A859]" />
                 </div>
-                <span className="text-[11px] font-semibold text-[#64748B] text-right max-w-[110px] leading-tight">
+                <span className="text-[11px] font-semibold text-[#64748B] dark:text-[#A1A1AA] text-right max-w-[110px] leading-tight">
                   {kpi.title}
                 </span>
               </div>
 
               <div>
-                <div className="text-2xl font-black text-[#0F172A] tracking-tight">{kpi.value}</div>
+                <div className="text-2xl font-black text-[#0F172A] dark:text-[#F5F5F5] tracking-tight">{kpi.value}</div>
                 <div className="flex items-center gap-1.5 mt-1 text-[10px]">
                   <span className={`font-bold flex items-center ${kpi.isPositive ? 'text-[#00A859]' : 'text-[#DC2626]'}`}>
                     {kpi.isPositive ? <TrendingUp className="w-3 h-3 mr-0.5" /> : <TrendingDown className="w-3 h-3 mr-0.5" />}
                     {kpi.change}
                   </span>
-                  <span className="text-[#94A3B8]">{kpi.period}</span>
+                  <span className="text-[#94A3B8] dark:text-[#64748B]">{kpi.period}</span>
                 </div>
               </div>
             </div>
@@ -171,68 +201,65 @@ export default function Dashboard({ onNavigateToAnalyzer, onNavigateToDocuments,
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Document Processing Volume Chart (8 Cols) */}
-        <div className="lg:col-span-8 bg-white border border-[#E2E8F0] p-6 rounded-2xl shadow-2xs space-y-4">
+        <div className="lg:col-span-8 bg-white dark:bg-[#0D0D0D] border border-[#E2E8F0] dark:border-[#242424] p-6 rounded-2xl shadow-2xs space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-extrabold text-[#0F172A] text-sm">Documents Processed Over Time</h3>
-              <p className="text-xs text-[#64748B]">Volume trends across automated document ingestion pipelines</p>
+              <h3 className="font-extrabold text-[#0F172A] dark:text-[#F5F5F5] text-sm">Documents Processed Over Time</h3>
+              <p className="text-xs text-[#64748B] dark:text-[#A1A1AA]">Volume trends across automated document ingestion pipelines</p>
             </div>
 
-            {/* Timeframe Filter */}
-            <div className="flex bg-[#F1F5F9] border border-[#E2E8F0] p-1 rounded-xl text-xs font-semibold">
-              {['7 Days', '30 Days', '90 Days'].map((tf) => (
+            <div className="flex items-center gap-1 bg-[#F1F5F9] dark:bg-[#1A1A1A] p-1 rounded-lg text-xs font-semibold">
+              {['7d', '30d', '90d'].map((tf) => (
                 <button
                   key={tf}
-                  onClick={() => setTimeframe(tf.toLowerCase().replace(' ', ''))}
-                  className={`px-3 py-1 rounded-lg transition-all ${
-                    (timeframe === '30d' && tf === '30 Days') || (timeframe === '7d' && tf === '7 Days') || (timeframe === '90d' && tf === '90 Days')
-                      ? 'bg-[#004D25] text-white shadow-xs font-bold'
-                      : 'text-[#64748B] hover:text-[#0F172A]'
+                  onClick={() => setTimeframe(tf)}
+                  className={`px-2.5 py-1 rounded-md text-[11px] transition-all cursor-pointer ${
+                    timeframe === tf
+                      ? 'bg-white dark:bg-[#262626] text-[#0F172A] dark:text-white shadow-2xs font-bold'
+                      : 'text-[#64748B] dark:text-[#A1A1AA] hover:text-[#0F172A] dark:hover:text-white'
                   }`}
                 >
-                  {tf}
+                  {tf.toUpperCase()}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="h-64 pt-2">
+          <div className="h-[240px] w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
+              <AreaChart data={volumeChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="colorProcessed" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#00A859" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#00A859" stopOpacity={0.0}/>
+                  <linearGradient id="colorProc" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#00A859" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#00A859" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-                <XAxis dataKey="date" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94A3B8' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94A3B8' }} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#E2E8F0', borderRadius: '12px', fontSize: '12px', color: '#0F172A', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
+                  contentStyle={{ backgroundColor: '#0F172A', borderColor: '#334155', borderRadius: '8px', color: '#fff', fontSize: '12px' }}
                 />
-                <Area type="monotone" dataKey="processed" stroke="#00A859" strokeWidth={3} fillOpacity={1} fill="url(#colorProcessed)" dot={{ fill: '#00A859', r: 4 }} />
+                <Area type="monotone" dataKey="processed" stroke="#00A859" strokeWidth={2.5} fillOpacity={1} fill="url(#colorProc)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Document Status Breakdown Donut Chart (4 Cols) */}
-        <div className="lg:col-span-4 bg-white border border-[#E2E8F0] p-6 rounded-2xl shadow-2xs space-y-4">
+        {/* Status Distribution Pie (4 Cols) */}
+        <div className="lg:col-span-4 bg-white dark:bg-[#0D0D0D] border border-[#E2E8F0] dark:border-[#242424] p-6 rounded-2xl shadow-2xs flex flex-col justify-between">
           <div>
-            <h3 className="font-extrabold text-[#0F172A] text-sm">Document Status Breakdown</h3>
-            <p className="text-xs text-[#64748B]">Current distribution of active document queue</p>
-          </div>
+            <h3 className="font-extrabold text-[#0F172A] dark:text-[#F5F5F5] text-sm">Status Breakdown</h3>
+            <p className="text-xs text-[#64748B] dark:text-[#A1A1AA]">Current distribution across lifecycle states</p>
 
-          <div className="grid grid-cols-2 items-center gap-2">
-            <div className="h-44 relative flex items-center justify-center">
+            <div className="h-[160px] w-full my-3 flex items-center justify-center relative">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={statusPieData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={50}
+                    innerRadius={48}
                     outerRadius={68}
                     paddingAngle={3}
                     dataKey="count"
@@ -241,88 +268,86 @@ export default function Dashboard({ onNavigateToAnalyzer, onNavigateToDocuments,
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#E2E8F0', borderRadius: '12px', fontSize: '12px' }}
-                  />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                <span className="text-base font-black text-[#0F172A]">11</span>
-                <span className="text-[10px] font-semibold text-[#64748B]">Documents</span>
+              <div className="absolute flex flex-col items-center justify-center text-center">
+                <span className="text-xl font-black text-[#0F172A] dark:text-[#F5F5F5] leading-none">
+                  {statusPieData.reduce((acc, curr) => acc + (curr.count || 0), 0)}
+                </span>
+                <span className="text-[10px] text-[#64748B] dark:text-[#A1A1AA] font-bold uppercase mt-0.5">Total</span>
               </div>
             </div>
+          </div>
 
-            <div className="space-y-2 text-xs">
-              {statusPieData.map((item, i) => (
-                <div key={i} className="flex items-center justify-between text-[11px]">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                    <span className="text-[#475569] font-medium truncate">{item.name}</span>
-                  </div>
-                  <span className="font-bold text-[#0F172A] ml-1">{item.count} ({item.percentage})</span>
-                </div>
-              ))}
-            </div>
+          <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-[#F1F5F9] dark:border-[#242424]">
+            {statusPieData.slice(0, 4).map((item, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                <span className="text-[#64748B] dark:text-[#A1A1AA] truncate text-[11px] font-medium">{item.name}:</span>
+                <span className="font-bold text-[#0F172A] dark:text-[#F5F5F5] text-[11px] ml-auto">{item.count}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Recent Documents Table */}
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden shadow-2xs">
-        <div className="p-6 border-b border-[#E2E8F0] flex items-center justify-between">
+      {/* Recent Documents Table Stream */}
+      <div className="bg-white dark:bg-[#0D0D0D] border border-[#E2E8F0] dark:border-[#242424] rounded-2xl shadow-2xs overflow-hidden">
+        <div className="p-6 border-b border-[#E2E8F0] dark:border-[#242424] flex items-center justify-between">
           <div>
-            <h3 className="font-extrabold text-[#0F172A] text-sm">Recent Documents</h3>
-            <p className="text-xs text-[#64748B]">Latest documents and their analysis status</p>
+            <h3 className="font-extrabold text-[#0F172A] dark:text-[#F5F5F5] text-sm">Recent Ingested Documents</h3>
+            <p className="text-xs text-[#64748B] dark:text-[#A1A1AA]">Real-time stream of documents processed by DeepFlow AI</p>
           </div>
-
           <button
             onClick={onNavigateToDocuments}
-            className="text-xs text-[#00A859] hover:underline font-bold flex items-center gap-1"
+            className="text-[#00A859] hover:text-[#059669] font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
           >
-            <span>View All</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <span>View All Documents</span>
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-[#475569]">
-            <thead className="bg-[#F8FAFC] text-[#64748B] uppercase tracking-wider font-extrabold text-[10px] border-b border-[#E2E8F0]">
-              <tr>
-                <th className="p-4">Document</th>
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="bg-[#F8FAFC] dark:bg-[#121212] border-b border-[#E2E8F0] dark:border-[#242424] text-[#64748B] dark:text-[#A1A1AA] font-bold uppercase tracking-wider text-[10px]">
+                <th className="p-4 pl-6">Document Name</th>
                 <th className="p-4">Type</th>
                 <th className="p-4">Uploaded By</th>
                 <th className="p-4">AI Confidence</th>
                 <th className="p-4">Priority</th>
                 <th className="p-4">Status</th>
-                <th className="p-4">Uploaded</th>
-                <th className="p-4 text-right">Actions</th>
+                <th className="p-4">Ingested</th>
+                <th className="p-4 pr-6 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E2E8F0]">
-              {documents.map((doc, idx) => {
-                const confPercent = Math.round((doc.confidence || 0.94) * 100);
-                const timeText = idx === 0 ? '2 min ago' : idx === 1 ? '12 min ago' : idx === 2 ? '1 hour ago' : idx === 3 ? '2 hours ago' : '4 hours ago';
-                
+            <tbody className="divide-y divide-[#E2E8F0] dark:divide-[#242424]">
+              {documents.map((doc) => {
+                const confPercent = Math.round((doc.ai_confidence || 0.95) * 100);
+                const timeText = doc.created_at ? new Date(doc.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now';
+
                 return (
                   <tr
                     key={doc.id}
                     onClick={() => onNavigateToAnalyzer(doc.id)}
-                    className="hover:bg-[#F8FAFC] cursor-pointer transition-colors group"
+                    className="hover:bg-[#F8FAFC] dark:hover:bg-[#141414] transition-colors cursor-pointer group"
                   >
-                    <td className="p-4 font-bold text-[#0F172A] flex items-center gap-2.5">
-                      <FileText className="w-4 h-4 text-[#00A859] shrink-0" />
-                      <span className="group-hover:text-[#00A859] transition-colors">{doc.original_filename}</span>
+                    <td className="p-4 pl-6 font-bold text-[#0F172A] dark:text-[#F5F5F5] flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-[#DCFCE7] dark:bg-[#00A859]/20 flex items-center justify-center text-[#00A859] shrink-0">
+                        <FileText className="w-4 h-4 text-[#00A859]" />
+                      </div>
+                      <span className="truncate max-w-[200px]">{doc.name}</span>
                     </td>
                     <td className="p-4">
-                      <span className="bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0] px-2.5 py-1 rounded-md text-[11px] font-medium">
-                        {doc.analysis?.document_type || 'Invoice'}
+                      <span className="px-2 py-0.5 rounded bg-[#F1F5F9] dark:bg-[#1E1E1E] text-[#475569] dark:text-[#A1A1AA] font-semibold text-[11px]">
+                        {doc.type}
                       </span>
                     </td>
-                    <td className="p-4 text-[#0F172A] font-semibold">{doc.uploaded_by}</td>
+                    <td className="p-4 text-[#0F172A] dark:text-[#F5F5F5] font-semibold">{doc.uploaded_by || 'System'}</td>
                     <td className="p-4">
-                      <div className="flex items-center gap-2 font-bold text-[#0F172A]">
+                      <div className="flex items-center gap-2 font-bold text-[#0F172A] dark:text-[#F5F5F5]">
                         <span>{confPercent}%</span>
-                        <div className="w-16 bg-[#E2E8F0] rounded-full h-1.5 overflow-hidden">
+                        <div className="w-16 bg-[#E2E8F0] dark:bg-[#262626] rounded-full h-1.5 overflow-hidden">
                           <div className="bg-[#00A859] h-full" style={{ width: `${confPercent}%` }} />
                         </div>
                       </div>
@@ -330,40 +355,34 @@ export default function Dashboard({ onNavigateToAnalyzer, onNavigateToDocuments,
                     <td className="p-4">
                       <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono tracking-wider ${
                         doc.priority === 'CRITICAL' || doc.priority === 'Critical' || doc.priority === 'HIGH' || doc.priority === 'High'
-                          ? 'bg-[#FEE2E2] text-[#991B1B]'
+                          ? 'bg-[#FEE2E2] dark:bg-[#991B1B]/30 text-[#991B1B] dark:text-[#F87171]'
                           : doc.priority === 'MEDIUM' || doc.priority === 'Medium'
-                          ? 'bg-[#FEF3C7] text-[#92400E]'
-                          : 'bg-[#DCFCE7] text-[#166534]'
+                          ? 'bg-[#FEF3C7] dark:bg-[#92400E]/30 text-[#92400E] dark:text-[#FBBF24]'
+                          : 'bg-[#DCFCE7] dark:bg-[#166534]/30 text-[#166534] dark:text-[#4ADE80]'
                       }`}>
                         {doc.priority?.toUpperCase()}
                       </span>
                     </td>
                     <td className="p-4">
                       <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
-                        doc.status === 'Approved' ? 'bg-[#DCFCE7] text-[#15803D]' :
-                        doc.status === 'Pending Approval' ? 'bg-[#FEF9C3] text-[#854D0E]' :
-                        doc.status === 'Under Review' ? 'bg-[#E0F2FE] text-[#075985]' :
-                        doc.status === 'Processed' ? 'bg-[#DCFCE7] text-[#166534]' :
-                        'bg-[#F1F5F9] text-[#475569]'
+                        doc.status === 'Approved' ? 'bg-[#DCFCE7] dark:bg-[#15803D]/20 text-[#15803D] dark:text-[#4ADE80]' :
+                        doc.status === 'Pending Approval' ? 'bg-[#FEF9C3] dark:bg-[#854D0E]/20 text-[#854D0E] dark:text-[#FACC15]' :
+                        doc.status === 'Under Review' ? 'bg-[#E0F2FE] dark:bg-[#075985]/20 text-[#075985] dark:text-[#38BDF8]' :
+                        doc.status === 'Processed' ? 'bg-[#DCFCE7] dark:bg-[#166534]/20 text-[#166534] dark:text-[#4ADE80]' :
+                        'bg-[#F1F5F9] dark:bg-[#1E1E1E] text-[#475569] dark:text-[#A1A1AA]'
                       }`}>
                         {doc.status}
                       </span>
                     </td>
-                    <td className="p-4 text-[#64748B] text-[11px] font-medium">{timeText}</td>
-                    <td className="p-4 text-right">
+                    <td className="p-4 text-[#64748B] dark:text-[#A1A1AA] text-[11px] font-medium">{timeText}</td>
+                    <td className="p-4 pr-6 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={(e) => { e.stopPropagation(); onNavigateToAnalyzer(doc.id); }}
-                          className="bg-white hover:bg-[#F1F5F9] border border-[#CBD5E1] text-[#0F172A] font-bold px-2.5 py-1 rounded-lg text-[11px] transition-all flex items-center gap-1 shadow-2xs"
+                          className="bg-white dark:bg-[#1E1E1E] hover:bg-[#F1F5F9] dark:hover:bg-[#2A2A2A] border border-[#CBD5E1] dark:border-[#333] text-[#0F172A] dark:text-white font-bold px-2.5 py-1 rounded-lg text-[11px] transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
                         >
-                          <Settings className="w-3 h-3 text-[#64748B]" />
+                          <Settings className="w-3 h-3 text-[#64748B] dark:text-[#A1A1AA]" />
                           <span>Analyze</span>
-                        </button>
-                        <button
-                          onClick={(e) => e.stopPropagation()}
-                          className="p-1 text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] rounded-lg transition-colors"
-                        >
-                          <MoreVertical className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
@@ -373,6 +392,25 @@ export default function Dashboard({ onNavigateToAnalyzer, onNavigateToDocuments,
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Footer Attribution Row */}
+      <div className="pt-6 border-t border-[#E2E8F0] dark:border-[#242424] flex items-center justify-between text-xs text-[#64748B] dark:text-[#A1A1AA]">
+        <div className="flex items-center gap-2">
+          <img 
+            src="/admin_avatar.jpg" 
+            alt="Deepak Gupta" 
+            className="w-5 h-5 rounded-full object-cover border border-[#00A859]"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = 'https://ui-avatars.com/api/?name=Deepak+Gupta&background=00A859&color=fff';
+            }}
+          />
+          <span className="text-[11px] font-medium">
+            Designed & Architected by <span className="font-bold text-[#0F172A] dark:text-[#F5F5F5]">Deepak Gupta</span>
+          </span>
+        </div>
+        <span className="text-[11px] font-medium text-[#94A3B8] dark:text-[#64748B]">DeepFlow AI Enterprise Platform</span>
       </div>
     </div>
   );
