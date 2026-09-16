@@ -1,10 +1,40 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Bell, Calendar, ChevronDown, Sun, Moon, CheckCheck, FileText, ShieldAlert, Cpu, Sparkles } from 'lucide-react';
+import { 
+  Search, 
+  Bell, 
+  Calendar, 
+  Sun, 
+  Moon, 
+  CheckCheck, 
+  FileText, 
+  ShieldAlert, 
+  Cpu, 
+  Sparkles, 
+  Mail, 
+  Send, 
+  X, 
+  CheckCircle2 
+} from 'lucide-react';
+import { api } from '../api';
 
-export default function Header({ pageTitle, onOpenUpload, user, theme, onToggleTheme }) {
+export default function Header({ pageTitle, onOpenUpload, user, theme, onToggleTheme, onNavigateToAnalyzer }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(3);
+  
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Contact form state
+  const [contactMessage, setContactMessage] = useState('');
+  const [contactSubject, setContactSubject] = useState('');
+  const [contactSent, setContactSent] = useState(false);
+  const [contactLoading, setContactLoading] = useState(false);
+
   const dropdownRef = useRef(null);
+  const searchRef = useRef(null);
 
   const [notifications, setNotifications] = useState([
     {
@@ -33,15 +63,6 @@ export default function Header({ pageTitle, onOpenUpload, user, theme, onToggleT
       unread: true,
       icon: ShieldAlert,
       iconBg: 'bg-[#E0F2FE] text-[#075985] dark:bg-[#38BDF8]/20 dark:text-[#38BDF8]'
-    },
-    {
-      id: 4,
-      title: 'System Initialized',
-      description: 'DeepFlow AI enterprise engine online.',
-      time: '1d ago',
-      unread: false,
-      icon: Sparkles,
-      iconBg: 'bg-[#F1F5F9] text-[#475569] dark:bg-[#262626] dark:text-[#A1A1AA]'
     }
   ]);
 
@@ -52,15 +73,35 @@ export default function Header({ pageTitle, onOpenUpload, user, theme, onToggleT
     year: 'numeric'
   });
 
-  const userName = user?.name || (user?.email ? user.email.split('@')[0] : 'User');
-  const userRole = user?.role || 'Admin';
-  const firstLetter = (user?.email || userName)[0].toUpperCase();
+  // Handle Search Input
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setSearchOpen(false);
+      return;
+    }
 
-  // Close dropdown on outside click
+    const timer = setTimeout(async () => {
+      try {
+        const docs = await api.getDocuments({ search: searchQuery });
+        setSearchResults(docs);
+        setSearchOpen(true);
+      } catch (err) {
+        console.error("Header search error:", err);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Close dropdowns on outside click
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setNotificationsOpen(false);
+      }
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setSearchOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -72,35 +113,105 @@ export default function Header({ pageTitle, onOpenUpload, user, theme, onToggleT
     setUnreadCount(0);
   };
 
-  const markSingleAsRead = (id) => {
-    setNotifications(prev =>
-      prev.map(n => {
-        if (n.id === id && n.unread) {
-          setUnreadCount(c => Math.max(0, c - 1));
-          return { ...n, unread: false };
-        }
-        return n;
-      })
-    );
+  const handleContactSubmit = (e) => {
+    e.preventDefault();
+    setContactLoading(true);
+    
+    // Construct mailto link fallback & trigger confirmation
+    const mailtoUrl = `mailto:mrdeepak.g11@gmail.com?subject=${encodeURIComponent(contactSubject || 'DeepFlow AI Query')}&body=${encodeURIComponent(contactMessage)}`;
+    window.open(mailtoUrl, '_blank');
+    
+    setTimeout(() => {
+      setContactLoading(false);
+      setContactSent(true);
+      setTimeout(() => {
+        setContactSent(false);
+        setContactOpen(false);
+        setContactSubject('');
+        setContactMessage('');
+      }, 2000);
+    }, 500);
   };
 
   return (
     <header className="h-16 border-b border-[#E2E8F0] dark:border-[#242424] bg-white/90 dark:bg-[#0D0D0D]/90 backdrop-blur-md px-8 flex items-center justify-between sticky top-0 z-30 transition-colors">
-      {/* Search Input Bar */}
-      <div className="relative flex-1 max-w-md">
+      {/* Search Input Bar with Working Overlay Dropdown */}
+      <div className="relative flex-1 max-w-md" ref={searchRef}>
         <Search className="w-4 h-4 text-[#94A3B8] absolute left-3 top-2.5" />
         <input
           type="text"
-          placeholder="Search documents, workflows, or anything..."
-          className="w-full bg-[#F1F5F9] dark:bg-[#1A1A1A] border border-[#E2E8F0] dark:border-[#2A2A2A] text-[#0F172A] dark:text-[#F5F5F5] placeholder:text-[#94A3B8] text-xs rounded-lg pl-9 pr-16 py-2 focus:bg-white dark:focus:bg-[#121212] focus:border-[#00A859] outline-none transition-all"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onFocus={() => searchQuery && setSearchOpen(true)}
+          placeholder="Search documents, workflows, or keywords..."
+          className="w-full bg-[#F1F5F9] dark:bg-[#1A1A1A] border border-[#E2E8F0] dark:border-[#2A2A2A] text-[#0F172A] dark:text-[#F5F5F5] placeholder:text-[#94A3B8] text-xs rounded-lg pl-9 pr-8 py-2 focus:bg-white dark:focus:bg-[#121212] focus:border-[#00A859] outline-none transition-all"
         />
-        <div className="absolute right-2.5 top-2 bg-white dark:bg-[#262626] border border-[#CBD5E1] dark:border-[#333] rounded px-1.5 py-0.5 text-[10px] text-[#64748B] dark:text-[#A1A1AA] font-mono shadow-2xs">
-          Ctrl + K
-        </div>
+        {searchQuery && (
+          <button
+            onClick={() => { setSearchQuery(''); setSearchOpen(false); }}
+            className="absolute right-2.5 top-2.5 text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+
+        {/* Live Search Results Floating Dropdown */}
+        {searchOpen && (
+          <div className="absolute left-0 right-0 mt-2 bg-white dark:bg-[#121212] border border-[#E2E8F0] dark:border-[#2A2A2A] rounded-2xl shadow-2xl z-50 overflow-hidden">
+            <div className="p-3 border-b border-[#E2E8F0] dark:border-[#242424] bg-[#F8FAFC] dark:bg-[#181818] flex items-center justify-between">
+              <span className="text-[11px] font-bold text-[#64748B] dark:text-[#A1A1AA] uppercase">
+                Search Results ({searchResults.length})
+              </span>
+            </div>
+            <div className="max-h-64 overflow-y-auto divide-y divide-[#E2E8F0] dark:divide-[#242424]">
+              {searchResults.length > 0 ? (
+                searchResults.map((doc) => (
+                  <div
+                    key={doc.id}
+                    onClick={() => {
+                      if (onNavigateToAnalyzer) onNavigateToAnalyzer(doc.id);
+                      setSearchOpen(false);
+                    }}
+                    className="p-3 hover:bg-[#F8FAFC] dark:hover:bg-[#181818] cursor-pointer flex items-center justify-between transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <FileText className="w-4 h-4 text-[#00A859] shrink-0" />
+                      <div className="truncate">
+                        <span className="text-xs font-bold text-[#0F172A] dark:text-[#F5F5F5] block truncate">
+                          {doc.original_filename || doc.name}
+                        </span>
+                        <span className="text-[10px] text-[#64748B] dark:text-[#A1A1AA]">
+                          {doc.type || 'Document'} • Status: {doc.status}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold text-[#00A859] bg-[#DCFCE7] dark:bg-[#00A859]/20 px-2 py-0.5 rounded">
+                      Analyze
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="p-4 text-center text-xs text-[#64748B] dark:text-[#A1A1AA]">
+                  No matching documents found.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Right Header Actions */}
       <div className="flex items-center gap-3">
+        {/* Contact Us Button */}
+        <button
+          onClick={() => setContactOpen(true)}
+          title="Contact Support"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#00A859] bg-[#DCFCE7] dark:bg-[#00A859]/20 border border-[#86EFAC] dark:border-[#00A859]/40 rounded-lg hover:bg-[#BBF7D0] transition-colors cursor-pointer"
+        >
+          <Mail className="w-3.5 h-3.5" />
+          <span>Contact Us</span>
+        </button>
+
         {/* Dark / Light Theme Toggle Button */}
         <button
           onClick={onToggleTheme}
@@ -135,9 +246,9 @@ export default function Header({ pageTitle, onOpenUpload, user, theme, onToggleT
             )}
           </button>
 
-          {/* Notifications Floating Dropdown Menu */}
+          {/* Notifications Dropdown */}
           {notificationsOpen && (
-            <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-[#121212] border border-[#E2E8F0] dark:border-[#2A2A2A] rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-[#121212] border border-[#E2E8F0] dark:border-[#2A2A2A] rounded-2xl shadow-2xl z-50 overflow-hidden">
               <div className="p-4 border-b border-[#E2E8F0] dark:border-[#242424] flex items-center justify-between bg-[#F8FAFC] dark:bg-[#181818]">
                 <div className="flex items-center gap-2">
                   <Bell className="w-4 h-4 text-[#00A859]" />
@@ -165,12 +276,7 @@ export default function Header({ pageTitle, onOpenUpload, user, theme, onToggleT
                   return (
                     <div
                       key={item.id}
-                      onClick={() => markSingleAsRead(item.id)}
-                      className={`p-3.5 flex items-start gap-3 transition-colors cursor-pointer ${
-                        item.unread
-                          ? 'bg-[#F8FAFC] dark:bg-[#161616] hover:bg-[#F1F5F9] dark:hover:bg-[#1F1F1F]'
-                          : 'bg-white dark:bg-[#121212] hover:bg-[#F8FAFC] dark:hover:bg-[#181818] opacity-75'
-                      }`}
+                      className="p-3.5 flex items-start gap-3 transition-colors cursor-pointer bg-white dark:bg-[#121212] hover:bg-[#F8FAFC] dark:hover:bg-[#181818]"
                     >
                       <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${item.iconBg}`}>
                         <Icon className="w-4 h-4" />
@@ -182,18 +288,9 @@ export default function Header({ pageTitle, onOpenUpload, user, theme, onToggleT
                         </div>
                         <p className="text-[11px] text-[#64748B] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{item.description}</p>
                       </div>
-                      {item.unread && (
-                        <span className="w-2 h-2 rounded-full bg-[#00A859] shrink-0 mt-2" />
-                      )}
                     </div>
                   );
                 })}
-              </div>
-
-              <div className="p-2.5 border-t border-[#E2E8F0] dark:border-[#242424] bg-[#F8FAFC] dark:bg-[#181818] text-center">
-                <span className="text-[11px] text-[#64748B] dark:text-[#A1A1AA] font-medium">
-                  DeepFlow AI System Alert Dispatcher
-                </span>
               </div>
             </div>
           )}
@@ -204,27 +301,86 @@ export default function Header({ pageTitle, onOpenUpload, user, theme, onToggleT
           <Calendar className="w-3.5 h-3.5 text-[#00A859]" />
           <span>{currentDate}</span>
         </div>
-
-        {/* User Profile Pill */}
-        <div className="flex items-center gap-2 bg-[#F8FAFC] dark:bg-[#141414] border border-[#E2E8F0] dark:border-[#2A2A2A] p-1 pr-3 rounded-lg cursor-pointer hover:border-[#CBD5E1] dark:hover:border-[#3A3A3A] transition-colors">
-          {user?.avatar ? (
-            <img
-              src={user.avatar}
-              alt={userName}
-              className="w-7 h-7 rounded-full object-cover border border-[#00A859]"
-            />
-          ) : (
-            <div className="w-7 h-7 rounded-full bg-[#00A859] text-white font-extrabold text-xs flex items-center justify-center border border-[#00A859]">
-              {firstLetter}
-            </div>
-          )}
-          <div className="text-left text-xs">
-            <span className="font-bold text-[#0F172A] dark:text-[#F5F5F5] block leading-tight">{userName}</span>
-            <span className="text-[10px] text-[#64748B] dark:text-[#A1A1AA] block leading-tight">{userRole}</span>
-          </div>
-          <ChevronDown className="w-3.5 h-3.5 text-[#64748B] dark:text-[#A1A1AA] ml-1" />
-        </div>
       </div>
+
+      {/* Contact Us Modal (directing queries to mrdeepak.g11@gmail.com) */}
+      {contactOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#121212] border border-[#E2E8F0] dark:border-[#242424] rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#E2E8F0] dark:border-[#242424] pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#DCFCE7] dark:bg-[#00A859]/20 flex items-center justify-center text-[#00A859]">
+                  <Mail className="w-5 h-5 text-[#00A859]" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-[#0F172A] dark:text-[#F5F5F5]">Contact Support</h3>
+                  <p className="text-xs text-[#64748B] dark:text-[#A1A1AA]">Direct support queries to <strong className="text-[#00A859]">mrdeepak.g11@gmail.com</strong></p>
+                </div>
+              </div>
+              <button
+                onClick={() => setContactOpen(false)}
+                className="text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {contactSent ? (
+              <div className="py-8 text-center space-y-2">
+                <div className="w-12 h-12 bg-[#DCFCE7] dark:bg-[#00A859]/20 rounded-full flex items-center justify-center text-[#00A859] mx-auto">
+                  <CheckCircle2 className="w-6 h-6 text-[#00A859]" />
+                </div>
+                <h4 className="font-extrabold text-sm text-[#0F172A] dark:text-[#F5F5F5]">Message Sent!</h4>
+                <p className="text-xs text-[#64748B] dark:text-[#A1A1AA]">Your query has been dispatched to <strong>mrdeepak.g11@gmail.com</strong>.</p>
+              </div>
+            ) : (
+              <form onSubmit={handleContactSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#334155] dark:text-[#A1A1AA] mb-1">Subject</label>
+                  <input
+                    type="text"
+                    required
+                    value={contactSubject}
+                    onChange={(e) => setContactSubject(e.target.value)}
+                    placeholder="E.g., Query regarding invoice workflow..."
+                    className="w-full bg-[#F8FAFC] dark:bg-[#1A1A1A] border border-[#E2E8F0] dark:border-[#2A2A2A] text-[#0F172A] dark:text-[#F5F5F5] text-xs rounded-lg px-3 py-2.5 outline-none focus:border-[#00A859]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#334155] dark:text-[#A1A1AA] mb-1">Your Message / Query</label>
+                  <textarea
+                    rows={4}
+                    required
+                    value={contactMessage}
+                    onChange={(e) => setContactMessage(e.target.value)}
+                    placeholder="Type your message here..."
+                    className="w-full bg-[#F8FAFC] dark:bg-[#1A1A1A] border border-[#E2E8F0] dark:border-[#2A2A2A] text-[#0F172A] dark:text-[#F5F5F5] text-xs rounded-lg p-3 outline-none focus:border-[#00A859] resize-none"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setContactOpen(false)}
+                    className="px-4 py-2 text-xs font-bold text-[#64748B] dark:text-[#A1A1AA] hover:bg-[#F1F5F9] dark:hover:bg-[#242424] rounded-lg transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={contactLoading}
+                    className="flex items-center gap-2 bg-[#00A859] hover:bg-[#059669] text-white font-bold text-xs px-5 py-2 rounded-lg transition-all shadow-md cursor-pointer"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>{contactLoading ? 'Sending...' : 'Send Message'}</span>
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 }
