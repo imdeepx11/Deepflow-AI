@@ -4,6 +4,7 @@ import './ledger-overrides.css';
 import './dark-mode.css';
 import './search-dark.css';
 import './desktop-density.css';
+import './workspace-sidebar.css';
 import Header from './components/Header';
 import UploadModal from './components/UploadModal';
 
@@ -110,10 +111,6 @@ export default function App() {
         {currentPage === 'audit' && <AuditLogs />}
         {currentPage === 'settings' && <Settings user={user} />}
       </main>
-
-      <div className="developer-credit" aria-label="Project credit">
-        Designed &amp; Developed by <strong>Deepak Gupta</strong>
-      </div>
 
       <UploadModal
         isOpen={uploadModalOpen}
