@@ -9,3 +9,11 @@ services:
         value: 10000
       - key: AI_PROVIDER
         value: demo
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_CREDENTIALS
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
