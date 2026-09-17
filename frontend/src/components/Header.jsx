@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bell, ChevronDown, FileText, LogOut, Mail, Moon, Search, Sparkles, Sun, X, ArrowUpRight, LayoutDashboard, Files, ScanSearch, Workflow, ChartNoAxesCombined, Settings as SettingsIcon, Plus } from 'lucide-react';
+import { Bell, ChevronDown, FileText, LogOut, Mail, Moon, Search, Sparkles, Sun, X, ArrowUpRight, LayoutDashboard, Files, ScanSearch, Workflow, ChartNoAxesCombined, Settings as SettingsIcon } from 'lucide-react';
 import { api } from '../api';
 
 const NAV = [
@@ -57,7 +57,7 @@ export default function Header({ currentPage, setCurrentPage, onOpenUpload, user
   return (
     <>
       <aside className="workspace-sidebar" aria-label="Workspace navigation">
-        <button className="sidebar-brand" onClick={() => setCurrentPage('dashboard')} aria-label="Go to dashboard">
+        <button className="sidebar-brand" type="button" onClick={() => setCurrentPage('dashboard')} aria-label="Go to dashboard">
           <span className="brand-mark"><Sparkles size={18} /></span>
           <span className="sidebar-brand-copy">
             <span className="brand-name">DeepFlow</span>
@@ -81,11 +81,9 @@ export default function Header({ currentPage, setCurrentPage, onOpenUpload, user
         </nav>
 
         <div className="sidebar-bottom">
-          <button className="sidebar-upload" type="button" onClick={onOpenUpload}>
-            <Plus size={15} />
-            <span>Upload document</span>
-          </button>
-          <div className="sidebar-credit">DeepFlow AI · Workspace</div>
+          <div className="sidebar-credit" aria-label="Project credit">
+            Designed &amp; Developed by <strong>Deepak Gupta</strong>
+          </div>
         </div>
       </aside>
 
@@ -171,7 +169,7 @@ export default function Header({ currentPage, setCurrentPage, onOpenUpload, user
               </button>
               {profileOpen && (
                 <div className="notification-popover profile-menu">
-                  <button className="popover-item" type="button" onClick={() => { setCurrentPage('settings'); setProfileOpen(false); }}>Profile & settings <ArrowUpRight size={13} /></button>
+                  <button className="popover-item" type="button" onClick={() => { setCurrentPage('settings'); setProfileOpen(false); }}>Profile &amp; settings <ArrowUpRight size={13} /></button>
                   <button className="popover-item" type="button" onClick={onLogout}><span className="popover-document"><LogOut size={13} /> Sign out</span></button>
                 </div>
               )}
