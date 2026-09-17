@@ -3,6 +3,7 @@ import './App.css';
 import './ledger-overrides.css';
 import './dark-mode.css';
 import './search-dark.css';
+import './sidebar-layout.css';
 import Header from './components/Header';
 import UploadModal from './components/UploadModal';
 
