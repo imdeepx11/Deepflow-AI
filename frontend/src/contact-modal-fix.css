@@ -1,0 +1,34 @@
+/* Contact modal action button fix */
+.contact-mail-link {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  width: auto !important;
+  min-width: 152px !important;
+  min-height: 40px !important;
+  box-sizing: border-box !important;
+  white-space: nowrap !important;
+  line-height: 1 !important;
+  text-decoration: none !important;
+  vertical-align: middle !important;
+}
+
+.contact-mail-link svg {
+  position: static !important;
+  left: auto !important;
+  top: auto !important;
+  flex: 0 0 auto !important;
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.contact-mail-link:hover {
+  text-decoration: none !important;
+}
+
+@media (max-width: 560px) {
+  .contact-mail-link {
+    width: 100% !important;
+  }
+}
