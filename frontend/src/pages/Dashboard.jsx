@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, FileText, Flag, Gauge, Plus, Shield, Timer, TrendingUp } from 'lucide-react';
+import { ArrowRight, FileText, Flag, Gauge, Timer, TrendingUp } from 'lucide-react';
 import { Area, AreaChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api } from '../api';
 
 const PIE_COLORS = ['#7c8aa5', '#a9814c', '#5a6178', '#6b2a32'];
 
-export default function Dashboard({ user, onNavigateToAnalyzer, onNavigateToDocuments, onOpenUpload }) {
+export default function Dashboard({ user, onNavigateToAnalyzer, onNavigateToDocuments }) {
   const [analytics, setAnalytics] = useState(null);
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -54,7 +54,6 @@ export default function Dashboard({ user, onNavigateToAnalyzer, onNavigateToDocu
           <h1 className="ledger-hero-title">Good evening, {name}</h1>
           <p className="page-intro">Here's what's happening across your document workflows.</p>
         </div>
-        <button className="primary-btn" onClick={onOpenUpload}><Plus size={14} /> Upload Document</button>
       </section>
 
       <section className="ledger-overview">
