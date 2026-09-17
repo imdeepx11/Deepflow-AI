@@ -1,0 +1,294 @@
+/* DeepFlow — complete dark theme override */
+body.dark-mode,
+html.dark body {
+  --dark-bg: #101216;
+  --dark-surface: #171a1f;
+  --dark-surface-2: #1d2127;
+  --dark-surface-3: #242930;
+  --dark-line: #343a43;
+  --dark-line-soft: #2a2f37;
+  --dark-text: #f3efe6;
+  --dark-muted: #aeb4be;
+  --dark-subtle: #858c97;
+  background: var(--dark-bg) !important;
+  color: var(--dark-text) !important;
+}
+
+body.dark-mode .editorial-app,
+body.dark-mode .editorial-page,
+body.dark-mode main,
+body.dark-mode section,
+body.dark-mode article {
+  color: var(--dark-text);
+}
+
+body.dark-mode .editorial-main {
+  background: transparent !important;
+}
+
+/* Surfaces */
+body.dark-mode .paper-card,
+body.dark-mode .ledger-list-card,
+body.dark-mode .ledger-panel,
+body.dark-mode .ledger-table-panel,
+body.dark-mode .ledger-note-card,
+body.dark-mode .ledger-quote,
+body.dark-mode .quote-card,
+body.dark-mode .upgrade-card,
+body.dark-mode .chart-card,
+body.dark-mode .docs-card,
+body.dark-mode .insight-card,
+body.dark-mode .toolbar-card,
+body.dark-mode .data-card,
+body.dark-mode .analyzer-viewer,
+body.dark-mode .login-side,
+body.dark-mode .field-item,
+body.dark-mode .workflow-item {
+  background: var(--dark-surface) !important;
+  color: var(--dark-text) !important;
+  border-color: var(--dark-line) !important;
+}
+
+body.dark-mode .field-item,
+body.dark-mode .workflow-item {
+  box-shadow: none !important;
+}
+
+body.dark-mode .editorial-header {
+  background: rgba(16,18,22,.96) !important;
+  border-bottom-color: var(--dark-line) !important;
+}
+
+/* Typography / copy */
+body.dark-mode .page-title,
+body.dark-mode .ledger-hero-title,
+body.dark-mode .card-title,
+body.dark-mode .hero-title,
+body.dark-mode .brand-name,
+body.dark-mode .field-value,
+body.dark-mode .doc-name,
+body.dark-mode .quote-card blockquote,
+body.dark-mode .ledger-quote blockquote,
+body.dark-mode .login-side h2,
+body.dark-mode .login-editorial h1,
+body.dark-mode .contact-modal h2,
+body.dark-mode .ledger-value {
+  color: var(--dark-text) !important;
+}
+
+body.dark-mode .page-intro,
+body.dark-mode .card-subtitle,
+body.dark-mode .kpi-label,
+body.dark-mode .kpi-meta,
+body.dark-mode .doc-meta,
+body.dark-mode .lr-label,
+body.dark-mode .ledger-row-label,
+body.dark-mode .login-side > p,
+body.dark-mode .login-editorial > p,
+body.dark-mode .login-label,
+body.dark-mode .quote-note,
+body.dark-mode .quote-credit,
+body.dark-mode .contact-modal p,
+body.dark-mode .contact-note,
+body.dark-mode .stamp-label,
+body.dark-mode .developer-credit {
+  color: var(--dark-muted) !important;
+}
+
+body.dark-mode .page-kicker,
+body.dark-mode .brand-subtitle,
+body.dark-mode .field-key {
+  color: #c7a565 !important;
+}
+
+/* Header controls */
+body.dark-mode .nav-link,
+body.dark-mode .contact-btn,
+body.dark-mode .header-icon-btn,
+body.dark-mode .header-user-btn,
+body.dark-mode .secondary-btn,
+body.dark-mode .ghost-btn,
+body.dark-mode .modal-close,
+body.dark-mode .tab-btn {
+  color: var(--dark-text) !important;
+  border-color: var(--dark-line) !important;
+  background: transparent !important;
+}
+
+body.dark-mode .nav-link.active {
+  color: #d7c28f !important;
+}
+
+body.dark-mode .nav-link:hover,
+body.dark-mode .contact-btn:hover,
+body.dark-mode .header-icon-btn:hover,
+body.dark-mode .header-user-btn:hover,
+body.dark-mode .secondary-btn:hover,
+body.dark-mode .ghost-btn:hover,
+body.dark-mode .modal-close:hover,
+body.dark-mode .tab-btn:hover {
+  background: var(--dark-surface-3) !important;
+}
+
+body.dark-mode .primary-btn {
+  background: #8fa996 !important;
+  color: #111613 !important;
+  box-shadow: none !important;
+}
+
+body.dark-mode .primary-btn:hover {
+  background: #a7bbaa !important;
+}
+
+body.dark-mode .header-search input,
+body.dark-mode .filter-search,
+body.dark-mode .editorial-select,
+body.dark-mode .editorial-input,
+body.dark-mode .login-field {
+  background: var(--dark-surface-2) !important;
+  color: var(--dark-text) !important;
+  border-color: var(--dark-line) !important;
+}
+
+body.dark-mode .header-search input::placeholder,
+body.dark-mode .filter-search input::placeholder,
+body.dark-mode .editorial-input::placeholder,
+body.dark-mode .login-field input::placeholder {
+  color: var(--dark-subtle) !important;
+}
+
+body.dark-mode .header-search svg,
+body.dark-mode .login-field svg {
+  color: #c7a565 !important;
+}
+
+/* Dashboard */
+body.dark-mode .editorial-hero-art {
+  background: linear-gradient(135deg, #242a27 0%, #1b211e 54%, #111512 100%) !important;
+  border-color: var(--dark-line) !important;
+}
+
+body.dark-mode .hero-art-copy p,
+body.dark-mode .hero-art-list {
+  color: #c3c8c2 !important;
+}
+
+body.dark-mode .ledger-overview,
+body.dark-mode .ledger-chart-grid,
+body.dark-mode .ledger-lower-grid,
+body.dark-mode .bento-grid {
+  background: var(--dark-line) !important;
+}
+
+body.dark-mode .ledger-stamp-card,
+body.dark-mode .ledger-donut-panel,
+body.dark-mode .status-card,
+body.dark-mode .action-card {
+  background: #111711 !important;
+  border-color: #29362e !important;
+}
+
+body.dark-mode .ledger-quote {
+  background: #1a1d20 !important;
+}
+
+/* Tables / data */
+body.dark-mode .editorial-table th,
+body.dark-mode .editorial-table td,
+body.dark-mode .ledger-row {
+  border-bottom-color: var(--dark-line) !important;
+}
+
+body.dark-mode .editorial-table tr:hover td {
+  background: var(--dark-surface-2) !important;
+}
+
+body.dark-mode .file-icon {
+  background: var(--dark-surface-3) !important;
+  color: #9eb6a1 !important;
+}
+
+body.dark-mode .pill-approved { background: #243329 !important; color: #b1cab4 !important; border-color: #4c6654 !important; }
+body.dark-mode .pill-pending { background: #3b3222 !important; color: #dfbd73 !important; border-color: #6b572f !important; }
+body.dark-mode .pill-review { background: #292d33 !important; color: #c6cad0 !important; border-color: #4a515b !important; }
+body.dark-mode .pill-rejected { background: #3d282c !important; color: #e3a8ad !important; border-color: #70474d !important; }
+body.dark-mode .pill-high { background: #402b2f !important; color: #efb2b8 !important; }
+body.dark-mode .pill-medium { background: #3b3222 !important; color: #dfbd73 !important; }
+body.dark-mode .pill-low { background: #243329 !important; color: #b1cab4 !important; }
+
+/* Analyzer */
+body.dark-mode .viewer-head {
+  background: var(--dark-surface-2) !important;
+  border-bottom-color: var(--dark-line) !important;
+}
+body.dark-mode .viewer-sheet {
+  background: #f7f2e9 !important;
+  color: #30352f !important;
+  border-color: #4a4d4c !important;
+}
+body.dark-mode .viewer-chip {
+  background: var(--dark-surface-2) !important;
+  color: var(--dark-muted) !important;
+  border-color: var(--dark-line) !important;
+}
+
+/* Menus and overlays */
+body.dark-mode .search-popover,
+body.dark-mode .notification-popover,
+body.dark-mode .profile-menu,
+body.dark-mode .contact-modal {
+  background: var(--dark-surface) !important;
+  color: var(--dark-text) !important;
+  border-color: var(--dark-line) !important;
+}
+body.dark-mode .popover-head,
+body.dark-mode .popover-item {
+  border-color: var(--dark-line-soft) !important;
+}
+body.dark-mode .popover-item:hover {
+  background: var(--dark-surface-2) !important;
+}
+body.dark-mode .popover-item strong,
+body.dark-mode .popover-document,
+body.dark-mode .notification-popover {
+  color: var(--dark-text) !important;
+}
+body.dark-mode .popover-item small {
+  color: var(--dark-muted) !important;
+}
+
+/* Login */
+body.dark-mode .login-page {
+  background: var(--dark-bg) !important;
+}
+body.dark-mode .login-editorial {
+  background: #15181c !important;
+  border-right-color: var(--dark-line) !important;
+}
+body.dark-mode .login-field input {
+  color: var(--dark-text) !important;
+}
+
+/* Developer credit */
+body.dark-mode .developer-credit {
+  background: rgba(23,26,31,.92) !important;
+  border-color: var(--dark-line) !important;
+}
+body.dark-mode .developer-credit strong {
+  color: var(--dark-text) !important;
+}
+
+/* Dark-mode accessibility / browser form controls */
+body.dark-mode input,
+body.dark-mode textarea,
+body.dark-mode select {
+  color-scheme: dark;
+}
+
+@media (max-width: 640px) {
+  body.dark-mode .contact-btn {
+    width: 38px;
+    padding: 0 !important;
+    justify-content: center;
+  }
+}
