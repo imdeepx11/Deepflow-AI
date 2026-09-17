@@ -13,6 +13,7 @@ const NAV = [
 
 const CONTACT_EMAIL = 'mrdeepak.g11@gmail.com';
 const CONTACT_PHONE = '9458777101';
+const GMAIL_COMPOSE_URL = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(CONTACT_EMAIL)}&su=DeepFlow%20AI%20Enquiry`;
 
 export default function Header({ currentPage, setCurrentPage, onOpenUpload, user, onNavigateToAnalyzer, onLogout, darkMode, onToggleDarkMode }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,12 +72,7 @@ export default function Header({ currentPage, setCurrentPage, onOpenUpload, user
         <div className="sidebar-section-label">Workspace</div>
         <nav className="sidebar-nav" aria-label="Primary navigation">
           {NAV.map(([id, label, Icon]) => (
-            <button
-              key={id}
-              type="button"
-              className={`sidebar-nav-link ${currentPage === id ? 'active' : ''}`}
-              onClick={() => setCurrentPage(id)}
-            >
+            <button key={id} type="button" className={`sidebar-nav-link ${currentPage === id ? 'active' : ''}`} onClick={() => setCurrentPage(id)}>
               <Icon size={17} strokeWidth={1.8} />
               <span>{label}</span>
             </button>
@@ -99,18 +95,8 @@ export default function Header({ currentPage, setCurrentPage, onOpenUpload, user
 
           <div className="header-search" ref={searchRef}>
             <Search size={15} />
-            <input
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              onFocus={() => searchQuery && setSearchOpen(true)}
-              placeholder="Search documents..."
-              aria-label="Search documents"
-            />
-            {searchQuery && (
-              <button className="clear-btn" type="button" onClick={() => setSearchQuery('')} aria-label="Clear search">
-                <X size={14} />
-              </button>
-            )}
+            <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} onFocus={() => searchQuery && setSearchOpen(true)} placeholder="Search documents..." aria-label="Search documents" />
+            {searchQuery && <button className="clear-btn" type="button" onClick={() => setSearchQuery('')} aria-label="Clear search"><X size={14} /></button>}
             {searchOpen && (
               <div className="search-popover">
                 <div className="popover-head">Search results · {searchResults.length}</div>
@@ -122,60 +108,28 @@ export default function Header({ currentPage, setCurrentPage, onOpenUpload, user
                   }}>
                     <span className="popover-document">
                       <FileText size={15} />
-                      <span>
-                        <strong>{doc.original_filename || 'Document'}</strong>
-                        <small>{doc.status || 'Uploaded'}</small>
-                      </span>
+                      <span><strong>{doc.original_filename || 'Document'}</strong><small>{doc.status || 'Uploaded'}</small></span>
                     </span>
                     <ArrowUpRight size={14} />
                   </button>
-                )) : (
-                  <div className="popover-item"><span style={{ fontSize: 10, color: 'var(--muted)' }}>No matching documents.</span></div>
-                )}
+                )) : <div className="popover-item"><span style={{ fontSize: 10, color: 'var(--muted)' }}>No matching documents.</span></div>}
               </div>
             )}
           </div>
 
           <div className="header-actions">
-            <button className="header-icon-btn" type="button" onClick={() => setContactOpen(true)} title="Contact us" aria-label="Contact us">
-              <Mail size={16} />
-            </button>
-
-            <button className="header-icon-btn" type="button" onClick={onToggleDarkMode} title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'} aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}>
-              {darkMode ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
-
-            <button className="header-icon-btn" type="button" onClick={onOpenUpload} title="Upload document" aria-label="Upload document">
-              <span className="plus-glyph">＋</span>
-            </button>
+            <button className="header-icon-btn" type="button" onClick={() => setContactOpen(true)} title="Contact us" aria-label="Contact us"><Mail size={16} /></button>
+            <button className="header-icon-btn" type="button" onClick={onToggleDarkMode} title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'} aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}>{darkMode ? <Sun size={16} /> : <Moon size={16} />}</button>
+            <button className="header-icon-btn" type="button" onClick={onOpenUpload} title="Upload document" aria-label="Upload document"><span className="plus-glyph">＋</span></button>
 
             <div className="header-relative">
-              <button className="header-icon-btn" type="button" onClick={() => setNotificationsOpen(v => !v)} title="Notifications" aria-label="Notifications">
-                <Bell size={16} />
-                <span className="notification-dot" />
-              </button>
-              {notificationsOpen && (
-                <div className="notification-popover">
-                  <div className="popover-head">Notifications</div>
-                  <div className="popover-item"><span><strong>Invoice analysis complete</strong><small>AI extraction is ready for review.</small></span></div>
-                  <div className="popover-item"><span><strong>Workflow waiting</strong><small>A finance approval needs attention.</small></span></div>
-                  <div className="popover-item"><span><strong>Audit snapshot saved</strong><small>Compliance trail updated.</small></span></div>
-                </div>
-              )}
+              <button className="header-icon-btn" type="button" onClick={() => setNotificationsOpen(v => !v)} title="Notifications" aria-label="Notifications"><Bell size={16} /><span className="notification-dot" /></button>
+              {notificationsOpen && <div className="notification-popover"><div className="popover-head">Notifications</div><div className="popover-item"><span><strong>Invoice analysis complete</strong><small>AI extraction is ready for review.</small></span></div><div className="popover-item"><span><strong>Workflow waiting</strong><small>A finance approval needs attention.</small></span></div><div className="popover-item"><span><strong>Audit snapshot saved</strong><small>Compliance trail updated.</small></span></div></div>}
             </div>
 
             <div ref={profileRef} className="header-relative">
-              <button className="header-user-btn" type="button" onClick={() => setProfileOpen(v => !v)}>
-                <span className="avatar">{initials}</span>
-                <span className="user-copy"><strong>{userName}</strong><span>{user?.role || 'Admin'}</span></span>
-                <ChevronDown size={13} />
-              </button>
-              {profileOpen && (
-                <div className="notification-popover profile-menu">
-                  <button className="popover-item" type="button" onClick={() => { setCurrentPage('settings'); setProfileOpen(false); }}>Profile &amp; settings <ArrowUpRight size={13} /></button>
-                  <button className="popover-item" type="button" onClick={onLogout}><span className="popover-document"><LogOut size={13} /> Sign out</span></button>
-                </div>
-              )}
+              <button className="header-user-btn" type="button" onClick={() => setProfileOpen(v => !v)}><span className="avatar">{initials}</span><span className="user-copy"><strong>{userName}</strong><span>{user?.role || 'Admin'}</span></span><ChevronDown size={13} /></button>
+              {profileOpen && <div className="notification-popover profile-menu"><button className="popover-item" type="button" onClick={() => { setCurrentPage('settings'); setProfileOpen(false); }}>Profile &amp; settings <ArrowUpRight size={13} /></button><button className="popover-item" type="button" onClick={onLogout}><span className="popover-document"><LogOut size={13} /> Sign out</span></button></div>}
             </div>
           </div>
         </div>
@@ -185,20 +139,13 @@ export default function Header({ currentPage, setCurrentPage, onOpenUpload, user
         <div className="contact-backdrop" role="dialog" aria-modal="true" aria-label="Contact DeepFlow">
           <div className="contact-modal">
             <div className="contact-modal-head">
-              <div>
-                <div className="page-kicker">Contact us</div>
-                <h2>Let's talk.</h2>
-              </div>
+              <div><div className="page-kicker">Contact us</div><h2>Let's talk.</h2></div>
               <button className="modal-close" type="button" onClick={() => setContactOpen(false)} aria-label="Close"><X size={18} /></button>
             </div>
             <p>For product questions, feedback, partnerships, or support, contact DeepFlow directly by email or phone.</p>
             <div className="contact-actions">
-              <a className="primary-btn contact-mail-link" href={`mailto:${CONTACT_EMAIL}?subject=DeepFlow%20AI%20Enquiry`} onClick={() => setContactOpen(false)}>
-                <Mail size={14} /> Email DeepFlow
-              </a>
-              <a className="secondary-btn contact-phone-link" href={`tel:${CONTACT_PHONE}`} onClick={() => setContactOpen(false)}>
-                <Phone size={14} /> Call {CONTACT_PHONE}
-              </a>
+              <a className="contact-action contact-mail-link" href={GMAIL_COMPOSE_URL} target="_blank" rel="noopener noreferrer" title="Open Gmail compose"><Mail size={15} /><span>Email DeepFlow</span></a>
+              <a className="contact-action contact-phone-link" href={`tel:${CONTACT_PHONE}`} title="Call DeepFlow"><Phone size={15} /><span>Call {CONTACT_PHONE}</span></a>
             </div>
             <div className="contact-note">Email: <strong>{CONTACT_EMAIL}</strong><br />Phone: <strong>{CONTACT_PHONE}</strong></div>
           </div>
