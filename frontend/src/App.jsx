@@ -5,6 +5,7 @@ import './dark-mode.css';
 import './search-dark.css';
 import './desktop-density.css';
 import './workspace-sidebar.css';
+import './contact-modal-fix.css';
 import Header from './components/Header';
 import UploadModal from './components/UploadModal';
 
