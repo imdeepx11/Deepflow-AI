@@ -6,6 +6,7 @@ import './search-dark.css';
 import './desktop-density.css';
 import './workspace-sidebar.css';
 import './contact-modal-fix.css';
+import './login-premium.css';
 import Header from './components/Header';
 import UploadModal from './components/UploadModal';
 
@@ -33,9 +34,6 @@ const SESSION_USER_KEY = 'deepflow_user_session';
 export default function App() {
   const [user, setUser] = useState(() => {
     try {
-      // The old implementation persisted login in localStorage, which caused
-      // the app to bypass the login screen on later visits. Remove that legacy
-      // value and keep authentication only for the current browser tab/session.
       localStorage.removeItem('deepflow_user');
       return JSON.parse(sessionStorage.getItem(SESSION_USER_KEY) || 'null');
     } catch {
