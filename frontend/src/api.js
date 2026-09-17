@@ -24,6 +24,7 @@ export async function fetchApi(endpoint, options = {}) {
 export const api = {
   // Auth
   login: (credentials) => fetchApi('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
+  loginWithGoogle: (idToken) => fetchApi('/auth/google', { method: 'POST', body: JSON.stringify({ id_token: idToken }) }),
   getMe: () => fetchApi('/auth/me'),
 
   // Documents
