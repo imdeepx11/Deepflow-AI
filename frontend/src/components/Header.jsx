@@ -118,11 +118,17 @@ export default function Header({ currentPage, setCurrentPage, onOpenUpload, user
           </div>
 
           <div className="header-actions">
-            <button className="contact-btn" type="button" onClick={() => setContactOpen(true)}>
-              <Mail size={15} /> Contact Us
+            <button
+              className="contact-btn"
+              type="button"
+              onClick={() => setContactOpen(true)}
+              title="Contact us"
+              aria-label="Contact us"
+            >
+              <Mail size={16} />
             </button>
 
-            <button className="header-icon-btn" type="button" onClick={onToggleDarkMode} title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'} aria-label="Toggle dark mode">
+            <button className="header-icon-btn" type="button" onClick={onToggleDarkMode} title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'} aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}>
               {darkMode ? <Sun size={16} /> : <Moon size={16} />}
             </button>
 
