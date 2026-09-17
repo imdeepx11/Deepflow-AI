@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './App.css';
+import './editorial-premium.css';
+import './ledger-overrides.css';
 import Header from './components/Header';
 import UploadModal from './components/UploadModal';
 
@@ -33,12 +35,15 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedDocId, setSelectedDocId] = useState(null);
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('deepflow_theme') === 'dark');
 
   useEffect(() => {
-    document.documentElement.classList.remove('dark');
+    document.documentElement.classList.toggle('dark', darkMode);
+    document.body.classList.toggle('dark-mode', darkMode);
     document.body.classList.add('deepflow-editorial');
+    localStorage.setItem('deepflow_theme', darkMode ? 'dark' : 'light');
     return () => document.body.classList.remove('deepflow-editorial');
-  }, []);
+  }, [darkMode]);
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
@@ -60,7 +65,7 @@ export default function App() {
     setCurrentPage('analyzer');
   };
 
-  if (!user) return <Login onLoginSuccess={handleLoginSuccess} />;
+  if (!user) return <Login onLoginSuccess={handleLoginSuccess} darkMode={darkMode} onToggleDarkMode={() => setDarkMode(v => !v)} />;
 
   return (
     <div className="editorial-app">
@@ -72,6 +77,8 @@ export default function App() {
         user={user}
         onNavigateToAnalyzer={navigateToAnalyzer}
         onLogout={handleLogout}
+        darkMode={darkMode}
+        onToggleDarkMode={() => setDarkMode(v => !v)}
       />
 
       <main className="editorial-main">
@@ -101,6 +108,10 @@ export default function App() {
         {currentPage === 'audit' && <AuditLogs />}
         {currentPage === 'settings' && <Settings user={user} />}
       </main>
+
+      <div className="developer-credit" aria-label="Project credit">
+        Developed and Designed by <strong>Deepak Gupta</strong>
+      </div>
 
       <UploadModal
         isOpen={uploadModalOpen}
