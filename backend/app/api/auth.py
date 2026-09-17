@@ -25,26 +25,72 @@ def find_user(email: str):
 
 def ensure_demo_user():
     user = find_user("demo@deepflow.ai")
-    if user: return user
+    if user:
+        return user
     user = {"id":"demo-admin","name":"Demo Administrator","email":"demo@deepflow.ai","role":"Admin","department":"Operations","avatar":"","created_at":utc_now()}
     collection("users").document(user["id"]).set(user)
     return user
 
 @router.post("/login")
 def login(req: LoginRequest):
-    if not req.email or not req.email.strip(): raise HTTPException(400,"Email address is required.")
     email = req.email.strip().lower()
-    if not EMAIL_REGEX.match(email): raise HTTPException(400,"Invalid email format. Please provide a valid email address (e.g. name@gmail.com).")
+    password = req.password or ""
+
+    if not email:
+        raise HTTPException(400, "Email address is required.")
+    if not EMAIL_REGEX.fullmatch(email):
+        raise HTTPException(400, "Invalid email format. Please provide a valid email address (e.g. name@gmail.com).")
+    if len(password) < 6:
+        raise HTTPException(400, "Password must contain at least 6 characters.")
+
     user = find_user(email)
     if not user:
         user_id = new_id()
-        user = {"id":user_id,"name":"Demo Administrator" if "demo" in email or "admin" in email else name_from_email(email),"email":email,"role":"Admin" if "admin" in email or "demo" in email else "User","department":"Operations","avatar":None,"created_at":utc_now()}
+        user = {
+            "id": user_id,
+            "name": "Demo Administrator" if "demo" in email or "admin" in email else name_from_email(email),
+            "email": email,
+            "role": "Admin" if "admin" in email or "demo" in email else "User",
+            "department": "Operations",
+            "avatar": None,
+            "created_at": utc_now(),
+        }
         collection("users").document(user_id).set(user)
-    audit_id=new_id()
-    collection("audit_logs").document(audit_id).set({"id":audit_id,"timestamp":utc_now(),"user_id":user["id"],"user_name":user["name"],"user_role":user.get("role","User"),"action":"USER_LOGIN","document_name":None,"workflow_name":None,"status":"Success","details":f"User signed in via email: {email}"})
-    return {"token":"demo-jwt-token-deepflow-2026","user":{"id":user["id"],"name":user["name"],"email":user["email"],"role":user.get("role","User"),"department":user.get("department","Operations"),"avatar":user.get("avatar")}}
+
+    audit_id = new_id()
+    collection("audit_logs").document(audit_id).set({
+        "id": audit_id,
+        "timestamp": utc_now(),
+        "user_id": user["id"],
+        "user_name": user["name"],
+        "user_role": user.get("role", "User"),
+        "action": "USER_LOGIN",
+        "document_name": None,
+        "workflow_name": None,
+        "status": "Success",
+        "details": f"User signed in via validated email: {email}",
+    })
+
+    return {
+        "token": "demo-jwt-token-deepflow-2026",
+        "user": {
+            "id": user["id"],
+            "name": user["name"],
+            "email": user["email"],
+            "role": user.get("role", "User"),
+            "department": user.get("department", "Operations"),
+            "avatar": user.get("avatar"),
+        },
+    }
 
 @router.get("/me")
 def me():
-    user=ensure_demo_user()
-    return {"id":user["id"],"name":user["name"],"email":user["email"],"role":user.get("role","Admin"),"department":user.get("department","Operations"),"avatar":user.get("avatar")}
+    user = ensure_demo_user()
+    return {
+        "id": user["id"],
+        "name": user["name"],
+        "email": user["email"],
+        "role": user.get("role", "Admin"),
+        "department": user.get("department", "Operations"),
+        "avatar": user.get("avatar"),
+    }
