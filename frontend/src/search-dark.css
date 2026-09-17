@@ -1,0 +1,38 @@
+/* DeepFlow search controls — final dark-mode override */
+html.dark body .toolbar-card .filter-search {
+  background: #1b1e23 !important;
+  border: 1px solid #353a44 !important;
+  color: #f3efe6 !important;
+  box-shadow: none !important;
+}
+
+html.dark body .toolbar-card .filter-search input {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: #f3efe6 !important;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+html.dark body .toolbar-card .filter-search input::placeholder {
+  color: #9299a6 !important;
+  opacity: 1 !important;
+}
+
+html.dark body .toolbar-card .filter-search svg {
+  color: #aeb4be !important;
+  flex: 0 0 auto;
+}
+
+/* Keep the top navigation search visually consistent. */
+html.dark body .header-search input {
+  background: #1b1e23 !important;
+  color: #f3efe6 !important;
+  border-color: #353a44 !important;
+}
+
+html.dark body .header-search input::placeholder {
+  color: #9299a6 !important;
+  opacity: 1 !important;
+}
