@@ -58,11 +58,11 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess, user }) 
 
   return (
     <div className="editorial-modal-backdrop" role="presentation">
-      <div className="editorial-modal" role="dialog" aria-modal="true" aria-label="Add a new document">
-        <div className="modal-head">
+      <div className="editorial-modal upload-modal" role="dialog" aria-modal="true" aria-labelledby="upload-dialog-title">
+        <div className="modal-head upload-modal-head">
           <div>
             <div className="page-kicker">Document intake</div>
-            <div className="card-title upload-modal-title">Add a new document.</div>
+            <div id="upload-dialog-title" className="card-title upload-modal-title">Add a new document.</div>
           </div>
           <button className="close-btn" type="button" onClick={onClose} aria-label="Close upload dialog">
             <X size={17} />
@@ -70,7 +70,7 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess, user }) 
         </div>
 
         <div className="modal-body upload-modal-body">
-          {error && <div className="upload-error">{error}</div>}
+          {error && <div className="upload-error" role="alert">{error}</div>}
 
           {!file ? (
             <button
@@ -79,8 +79,8 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess, user }) 
               onClick={() => inputRef.current?.click()}
               aria-label="Choose a document to upload"
             >
-              <span className="upload-dropzone-icon file-icon">
-                <UploadCloud size={20} />
+              <span className="upload-dropzone-icon">
+                <UploadCloud size={22} />
               </span>
               <span className="upload-dropzone-title">Drop a document here, or browse.</span>
               <span className="upload-dropzone-meta">PDF, DOCX, DOC, TXT · up to 25 MB</span>
@@ -88,9 +88,7 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess, user }) 
           ) : (
             <div className="upload-file-card">
               <div className="upload-file-main">
-                <div className="file-icon">
-                  <FileText size={15} />
-                </div>
+                <div className="file-icon"><FileText size={15} /></div>
                 <div className="upload-file-copy">
                   <strong>{file.name}</strong>
                   <span>{(file.size / 1024).toFixed(1)} KB</span>
@@ -106,7 +104,9 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess, user }) 
             ref={inputRef}
             type="file"
             accept=".pdf,.docx,.doc,.txt"
-            className="visually-hidden"
+            className="upload-file-input"
+            aria-hidden="true"
+            tabIndex={-1}
             onChange={(event) => choose(event.target.files?.[0])}
           />
 
