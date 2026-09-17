@@ -3,7 +3,7 @@ import './App.css';
 import './ledger-overrides.css';
 import './dark-mode.css';
 import './search-dark.css';
-import './workspace-sidebar.css';
+import './desktop-density.css';
 import Header from './components/Header';
 import UploadModal from './components/UploadModal';
 
@@ -112,7 +112,7 @@ export default function App() {
       </main>
 
       <div className="developer-credit" aria-label="Project credit">
-        Developed and Designed by <strong>Deepak Gupta</strong>
+        Designed &amp; Developed by <strong>Deepak Gupta</strong>
       </div>
 
       <UploadModal
