@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import uuid
 from datetime import datetime, timezone
 
@@ -10,33 +11,64 @@ _APP_NAME = "deepflow-firestore"
 
 
 def _initialize_firebase():
+    """Initialize a deterministic named Firebase Admin app and return Firestore."""
+    credentials_json = os.getenv("FIREBASE_CREDENTIALS", "").strip()
+    project_id = os.getenv("FIREBASE_PROJECT_ID", "").strip()
+
+    # Reuse the named app if this module is reloaded.
     try:
-        return firestore.client()
-    except Exception:
+        app = firebase_admin.get_app(_APP_NAME)
+        return firestore.client(app=app)
+    except ValueError:
         pass
 
-    if not firebase_admin._apps:
-        credentials_json = os.getenv("FIREBASE_CREDENTIALS")
-        project_id = os.getenv("FIREBASE_PROJECT_ID")
+    if credentials_json:
+        try:
+            credential_data = json.loads(credentials_json)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError("FIREBASE_CREDENTIALS is not valid JSON.") from exc
 
-        if credentials_json:
-            try:
-                credential_data = json.loads(credentials_json)
-            except json.JSONDecodeError as exc:
-                raise RuntimeError("FIREBASE_CREDENTIALS is not valid JSON.") from exc
-            firebase_admin.initialize_app(
-                credentials.Certificate(credential_data),
-                {"projectId": project_id} if project_id else None,
-                name=_APP_NAME,
+        credential_project_id = str(credential_data.get("project_id", "")).strip()
+        effective_project_id = project_id or credential_project_id
+
+        if not effective_project_id:
+            raise RuntimeError(
+                "Firebase project ID is missing. Set FIREBASE_PROJECT_ID or include project_id in FIREBASE_CREDENTIALS."
             )
-        else:
-            options = {"projectId": project_id} if project_id else None
-            firebase_admin.initialize_app(options=options, name=_APP_NAME)
 
-    try:
-        return firestore.client(app=firebase_admin.get_app(_APP_NAME))
-    except ValueError:
-        return firestore.client()
+        # Prevent hidden whitespace/control characters from reaching gRPC metadata.
+        if not re.fullmatch(r"[a-z0-9][a-z0-9-]{4,28}[a-z0-9]", effective_project_id):
+            raise RuntimeError(
+                "FIREBASE_PROJECT_ID must be a valid Firebase/GCP project ID (lowercase letters, numbers, and hyphens only)."
+            )
+
+        if credential_project_id and credential_project_id != effective_project_id:
+            raise RuntimeError(
+                "FIREBASE_PROJECT_ID does not match the project_id in FIREBASE_CREDENTIALS."
+            )
+
+        app = firebase_admin.initialize_app(
+            credentials.Certificate(credential_data),
+            {"projectId": effective_project_id},
+            name=_APP_NAME,
+        )
+        return firestore.client(app=app)
+
+    if not project_id:
+        raise RuntimeError(
+            "Firebase credentials are missing. Set FIREBASE_CREDENTIALS and FIREBASE_PROJECT_ID in Render."
+        )
+
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]{4,28}[a-z0-9]", project_id):
+        raise RuntimeError(
+            "FIREBASE_PROJECT_ID must be a valid Firebase/GCP project ID (lowercase letters, numbers, and hyphens only)."
+        )
+
+    app = firebase_admin.initialize_app(
+        options={"projectId": project_id},
+        name=_APP_NAME,
+    )
+    return firestore.client(app=app)
 
 
 _db = _initialize_firebase()
