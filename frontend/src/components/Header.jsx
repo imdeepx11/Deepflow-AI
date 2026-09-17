@@ -189,10 +189,10 @@ export default function Header({ currentPage, setCurrentPage, onOpenUpload, user
               <button className="modal-close" type="button" onClick={() => setContactOpen(false)} aria-label="Close"><X size={18} /></button>
             </div>
             <p>For product questions, feedback, partnerships, or support, start a message from your email client.</p>
-            <a className="primary-btn contact-mail-link" href="mailto:contact@deepflow.ai?subject=DeepFlow%20AI%20Enquiry" onClick={() => setContactOpen(false)}>
+            <a className="primary-btn contact-mail-link" href="mailto:mrdeepak.g11@gmail.com?subject=DeepFlow%20AI%20Enquiry" onClick={() => setContactOpen(false)}>
               <Mail size={14} /> Email DeepFlow
             </a>
-            <div className="contact-note">Replace <strong>contact@deepflow.ai</strong> with your real support email before production.</div>
+            <div className="contact-note">Send your enquiry to the DeepFlow project email.</div>
           </div>
         </div>
       )}
