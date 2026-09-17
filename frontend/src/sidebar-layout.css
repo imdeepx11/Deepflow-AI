@@ -1,0 +1,175 @@
+/* DeepFlow permanent workspace sidebar.
+   Desktop density is intentionally closer to a 90% browser-zoom feel
+   while keeping the browser itself at 100%. */
+
+@media (min-width: 981px) {
+  .editorial-header-inner {
+    width: min(1540px, calc(100% - 32px));
+    min-height: 70px;
+    gap: 12px;
+  }
+
+  .editorial-header-inner .brand-block {
+    min-width: 204px;
+    flex: 0 0 204px;
+  }
+
+  /* Permanent vertical navigation: one option per row, no slider. */
+  .top-nav {
+    position: fixed;
+    left: 0;
+    top: 70px;
+    bottom: 0;
+    width: 198px;
+    z-index: 35;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding: 24px 14px 92px;
+    box-sizing: border-box;
+    overflow: visible;
+    white-space: normal;
+    border-right: 1px solid var(--line);
+    background: var(--paper);
+  }
+
+  .top-nav::before {
+    content: 'WORKSPACE';
+    display: block;
+    margin: 0 10px 9px;
+    color: var(--gold);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: .18em;
+  }
+
+  /* Replace the old sidebar upload area with the project credit. */
+  .top-nav::after {
+    content: 'Designed & Developed by Deepak Gupta';
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    bottom: 22px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 8px;
+    line-height: 1.45;
+    letter-spacing: .04em;
+    text-align: center;
+  }
+
+  /* Hide any legacy sidebar upload block if it exists in older markup. */
+  .sidebar-upload,
+  .workspace-sidebar .sidebar-upload {
+    display: none !important;
+  }
+
+  .nav-link {
+    width: 100%;
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    box-sizing: border-box;
+    padding: 0 12px;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    color: var(--ink-soft);
+    font-size: 11px;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+    overflow: visible;
+  }
+
+  .nav-link:hover {
+    color: var(--ink);
+    background: var(--paper-2);
+    border-color: var(--line);
+  }
+
+  .nav-link.active {
+    color: var(--forest);
+    background: var(--paper-2);
+    border-color: var(--line);
+    box-shadow: none;
+  }
+
+  .nav-link.active::before {
+    content: '';
+    width: 3px;
+    height: 17px;
+    flex: 0 0 3px;
+    margin-right: 9px;
+    border-radius: 999px;
+    background: var(--gold);
+  }
+
+  /* Keep the content visually balanced at 100% browser zoom. */
+  .editorial-main {
+    width: calc(100% - 230px);
+    max-width: 1540px;
+    margin: 0 16px 0 214px;
+    padding: 24px 0 56px;
+    box-sizing: border-box;
+  }
+
+  .header-search {
+    width: 218px;
+    flex: 0 1 218px;
+  }
+
+  .header-actions { gap: 5px; }
+
+  .brand-name { font-size: 25px; }
+  .brand-subtitle { font-size: 8px; }
+
+  /* Tighten the main dashboard so it reads like the 90% view at 100%. */
+  .ledger-dashboard .ledger-hero {
+    margin-bottom: 16px;
+  }
+
+  .ledger-dashboard .ledger-overview,
+  .ledger-dashboard .ledger-chart-grid,
+  .ledger-dashboard .ledger-lower-grid {
+    gap: 14px;
+  }
+
+  .ledger-dashboard .ledger-list-card,
+  .ledger-dashboard .ledger-stamp-card,
+  .ledger-dashboard .ledger-panel,
+  .ledger-dashboard .ledger-table-panel,
+  .ledger-dashboard .ledger-note-card {
+    border-radius: 18px;
+  }
+
+  /* The fixed sidebar credit is the single developer credit on desktop. */
+  .developer-credit { display: none; }
+
+  /* No horizontal scrolling anywhere in the desktop workspace navigation. */
+  .top-nav::-webkit-scrollbar { display: none; }
+  .top-nav { scrollbar-width: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-link { transition: none !important; }
+}
+
+@media (max-width: 980px) {
+  .editorial-main {
+    width: min(100% - 30px, 760px);
+    margin: 0 auto;
+    padding: 22px 0 42px;
+  }
+}
+
+@media (max-width: 560px) {
+  .developer-credit {
+    display: block;
+    right: 12px;
+    bottom: 12px;
+    font-size: 7px;
+  }
+}
