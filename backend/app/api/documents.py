@@ -1,389 +1,167 @@
 import os
 import shutil
 from datetime import datetime
-from typing import Optional, List
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
-from sqlalchemy.orm import Session
+from typing import Optional
+
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 
-from app.database.database import get_db
-from app.database.models import Document, DocumentAnalysis, Workflow, WorkflowStep, Approval, AuditLog
+from app.database.database import collection, new_id, utc_now, to_iso
 from app.services.document_processor import DocumentProcessor
 from app.services.ai_service import AIService
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
-
-UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads")
+UPLOAD_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads"))
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 class ApprovalRequest(BaseModel):
-    action: str = "Approve" # Approve, Reject, Request Changes
+    action: str = "Approve"
     approver_name: str = "Finance Manager"
     approver_role: str = "Finance Manager"
     comments: Optional[str] = None
 
-@router.get("")
-def list_documents(
-    doc_type: Optional[str] = None,
-    status: Optional[str] = None,
-    priority: Optional[str] = None,
-    search: Optional[str] = None,
-    uploaded_by: Optional[str] = None,
-    db: Session = Depends(get_db)
-):
-    query = db.query(Document)
-    if uploaded_by and uploaded_by != "All" and "demo" not in uploaded_by.lower() and "admin" not in uploaded_by.lower():
-        query = query.filter(Document.uploaded_by.ilike(f"%{uploaded_by}%"))
-    if doc_type and doc_type != "All":
-        query = query.join(DocumentAnalysis, isouter=True).filter(DocumentAnalysis.document_type == doc_type)
-    if status and status != "All":
-        query = query.filter(Document.status == status)
-    if priority and priority != "All":
-        query = query.filter(Document.priority == priority)
-    if search:
-        query = query.filter(Document.filename.ilike(f"%{search}%"))
 
-    docs = query.order_by(Document.created_at.desc()).all()
-    results = []
-    for d in docs:
-        analysis_data = None
-        if d.analysis:
-            analysis_data = {
-                "document_type": d.analysis.document_type,
-                "confidence": d.analysis.confidence,
-                "priority": d.analysis.priority,
-                "risk_level": d.analysis.risk_level,
-                "risk_score": d.analysis.risk_score,
-                "recommended_action": d.analysis.recommended_action
-            }
-        results.append({
-            "id": d.id,
-            "filename": d.filename,
-            "original_filename": d.original_filename,
-            "file_type": d.file_type,
-            "file_size": d.file_size,
-            "status": d.status,
-            "priority": d.priority,
-            "confidence": d.confidence,
-            "uploaded_by": d.uploaded_by,
-            "created_at": d.created_at.isoformat(),
-            "analysis": analysis_data
-        })
-    return results
+def _doc(doc_id):
+    s = collection("documents").document(str(doc_id)).get()
+    return s if s.exists else None
+
+
+def _analysis(doc_id):
+    s = collection("analyses").document(str(doc_id)).get()
+    if not s.exists: return None
+    d = s.to_dict() or {}; d["id"] = s.id; return d
+
+
+def _steps(workflow_id):
+    rows=[]
+    for s in collection("workflow_steps").stream():
+        d=s.to_dict() or {}
+        if str(d.get("workflow_id")) == str(workflow_id):
+            d["id"]=s.id; rows.append(d)
+    rows.sort(key=lambda x:x.get("step_index",0)); return rows
+
+
+def _workflows(doc_id):
+    rows=[]
+    for s in collection("workflows").stream():
+        d=s.to_dict() or {}
+        if str(d.get("document_id")) == str(doc_id):
+            d["id"]=s.id; d["steps"]=_steps(s.id); rows.append(d)
+    rows.sort(key=lambda x:to_iso(x.get("created_at")) or "", reverse=True); return rows
+
+
+def _approvals(doc_id):
+    rows=[]
+    for s in collection("approvals").stream():
+        d=s.to_dict() or {}
+        if str(d.get("document_id")) == str(doc_id): d["id"]=s.id; rows.append(d)
+    rows.sort(key=lambda x:to_iso(x.get("created_at")) or ""); return rows
+
+
+def _audit(action, document_name=None, workflow_name=None, user_name="Admin", user_role="Admin", status="Success", details=None):
+    lid=new_id()
+    collection("audit_logs").document(lid).set({"id":lid,"timestamp":utc_now(),"user_name":user_name,"user_role":user_role,"action":action,"document_name":document_name,"workflow_name":workflow_name,"status":status,"details":details})
+
+
+@router.get("")
+def list_documents(doc_type:Optional[str]=None,status:Optional[str]=None,priority:Optional[str]=None,search:Optional[str]=None,uploaded_by:Optional[str]=None):
+    out=[]
+    for s in collection("documents").stream():
+        d=s.to_dict() or {}; d["id"]=s.id; a=_analysis(s.id)
+        if uploaded_by and uploaded_by!="All" and "demo" not in uploaded_by.lower() and "admin" not in uploaded_by.lower() and uploaded_by.lower() not in str(d.get("uploaded_by","")).lower(): continue
+        if status and status!="All" and d.get("status")!=status: continue
+        if priority and priority!="All" and d.get("priority")!=priority: continue
+        if doc_type and doc_type!="All" and (not a or a.get("document_type")!=doc_type): continue
+        if search and search.lower() not in str(d.get("original_filename",d.get("filename",""))).lower(): continue
+        out.append({"id":d["id"],"filename":d.get("filename"),"original_filename":d.get("original_filename"),"file_type":d.get("file_type"),"file_size":d.get("file_size",0),"status":d.get("status","Uploaded"),"priority":d.get("priority","Medium"),"confidence":d.get("confidence",0),"uploaded_by":d.get("uploaded_by","Admin"),"created_at":to_iso(d.get("created_at")),"analysis":({"document_type":a.get("document_type"),"confidence":a.get("confidence"),"priority":a.get("priority"),"risk_level":a.get("risk_level"),"risk_score":a.get("risk_score"),"recommended_action":a.get("recommended_action")} if a else None)})
+    out.sort(key=lambda x:x.get("created_at") or "",reverse=True); return out
+
 
 @router.get("/{doc_id}")
-def get_document(doc_id: int, db: Session = Depends(get_db)):
-    doc = db.query(Document).filter(Document.id == doc_id).first()
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
+def get_document(doc_id:str):
+    s=_doc(doc_id)
+    if not s: raise HTTPException(404,"Document not found")
+    d=s.to_dict() or {}; a=_analysis(doc_id); wfs=_workflows(doc_id); aps=_approvals(doc_id)
+    analysis=None
+    if a:
+        analysis={"id":a.get("id"),"document_type":a.get("document_type"),"confidence":a.get("confidence"),"priority":a.get("priority"),"priority_reason":a.get("priority_reason"),"risk_level":a.get("risk_level"),"risk_score":a.get("risk_score"),"extracted_fields":a.get("extracted_fields") or {},"risks":a.get("risks") or [],"summary":a.get("summary") or [],"recommended_action":a.get("recommended_action"),"department":a.get("department"),"assigned_role":a.get("assigned_role"),"sla_hours":a.get("sla_hours"),"workflow":(a.get("raw_ai_response") or {}).get("workflow",[])}
+    return {"id":s.id,"filename":d.get("filename"),"original_filename":d.get("original_filename"),"file_type":d.get("file_type"),"file_size":d.get("file_size",0),"extracted_text":d.get("extracted_text",""),"status":d.get("status","Uploaded"),"priority":d.get("priority","Medium"),"confidence":d.get("confidence",0),"uploaded_by":d.get("uploaded_by","Admin"),"created_at":to_iso(d.get("created_at")),"analysis":analysis,"workflows":[{"id":w.get("id"),"name":w.get("name"),"current_step_index":w.get("current_step_index",0),"status":w.get("status","Active"),"steps":[{"id":x.get("id"),"step_index":x.get("step_index",0),"step_name":x.get("step_name"),"node_type":x.get("node_type"),"role":x.get("role"),"status":x.get("status"),"completed_at":to_iso(x.get("completed_at")),"comments":x.get("comments")} for x in w.get("steps",[])]} for w in wfs],"approvals":[{"id":x.get("id"),"action":x.get("action"),"approver_name":x.get("approver_name"),"approver_role":x.get("approver_role"),"comments":x.get("comments"),"created_at":to_iso(x.get("created_at"))} for x in aps]}
 
-    analysis_dict = None
-    if doc.analysis:
-        analysis_dict = {
-            "id": doc.analysis.id,
-            "document_type": doc.analysis.document_type,
-            "confidence": doc.analysis.confidence,
-            "priority": doc.analysis.priority,
-            "priority_reason": doc.analysis.priority_reason,
-            "risk_level": doc.analysis.risk_level,
-            "risk_score": doc.analysis.risk_score,
-            "extracted_fields": doc.analysis.extracted_fields or {},
-            "risks": doc.analysis.risks or [],
-            "summary": doc.analysis.summary or [],
-            "recommended_action": doc.analysis.recommended_action,
-            "department": doc.analysis.department,
-            "assigned_role": doc.analysis.assigned_role,
-            "sla_hours": doc.analysis.sla_hours,
-            "workflow": doc.analysis.raw_ai_response.get("workflow", []) if doc.analysis.raw_ai_response else []
-        }
-
-    workflows_list = []
-    for wf in doc.workflows:
-        steps_list = [
-            {
-                "id": s.id,
-                "step_index": s.step_index,
-                "step_name": s.step_name,
-                "node_type": s.node_type,
-                "role": s.role,
-                "status": s.status,
-                "completed_at": s.completed_at.isoformat() if s.completed_at else None,
-                "comments": s.comments
-            }
-            for s in wf.steps
-        ]
-        workflows_list.append({
-            "id": wf.id,
-            "name": wf.name,
-            "current_step_index": wf.current_step_index,
-            "status": wf.status,
-            "steps": steps_list
-        })
-
-    approvals_list = [
-        {
-            "id": a.id,
-            "action": a.action,
-            "approver_name": a.approver_name,
-            "approver_role": a.approver_role,
-            "comments": a.comments,
-            "created_at": a.created_at.isoformat()
-        }
-        for a in doc.approvals
-    ]
-
-    return {
-        "id": doc.id,
-        "filename": doc.filename,
-        "original_filename": doc.original_filename,
-        "file_type": doc.file_type,
-        "file_size": doc.file_size,
-        "extracted_text": doc.extracted_text,
-        "status": doc.status,
-        "priority": doc.priority,
-        "confidence": doc.confidence,
-        "uploaded_by": doc.uploaded_by,
-        "created_at": doc.created_at.isoformat(),
-        "analysis": analysis_dict,
-        "workflows": workflows_list,
-        "approvals": approvals_list
-    }
 
 @router.post("/upload")
-async def upload_document(
-    file: UploadFile = File(...),
-    uploaded_by: str = Form("Admin"),
-    db: Session = Depends(get_db)
-):
-    valid_exts = [".pdf", ".docx", ".doc", ".txt"]
-    ext = os.path.splitext(file.filename)[1].lower()
-    if ext not in valid_exts:
-        raise HTTPException(status_code=400, detail=f"Unsupported file format {ext}. Allowed: PDF, DOCX, TXT")
+async def upload_document(file:UploadFile=File(...),uploaded_by:str=Form("Admin")):
+    valid=[".pdf",".docx",".doc",".txt"]; name=file.filename or "document"; ext=os.path.splitext(name)[1].lower()
+    if ext not in valid: raise HTTPException(400,f"Unsupported file format {ext}. Allowed: PDF, DOCX, TXT")
+    saved=f"{int(datetime.utcnow().timestamp())}_{new_id()}_{os.path.basename(name)}"; path=os.path.join(UPLOAD_DIR,saved)
+    try:
+        with open(path,"wb") as buffer: shutil.copyfileobj(file.file,buffer)
+    finally: await file.close()
+    size=os.path.getsize(path); text=DocumentProcessor.extract_text(path,ext); did=new_id(); now=utc_now()
+    collection("documents").document(did).set({"id":did,"filename":saved,"original_filename":name,"file_type":ext[1:].upper(),"file_size":size,"storage_path":path,"extracted_text":text,"status":"Uploaded","priority":"Medium","confidence":0.0,"uploaded_by":uploaded_by,"created_at":now,"updated_at":now})
+    _audit("Uploaded Document",name,user_name=uploaded_by,user_role="Admin",details=f"Uploaded file {name} ({size} bytes)")
+    return {"message":"Document uploaded successfully","id":did}
 
-    saved_filename = f"{int(datetime.utcnow().timestamp())}_{file.filename}"
-    file_path = os.path.join(UPLOAD_DIR, saved_filename)
-
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    file_size = os.path.getsize(file_path)
-
-    # Extract text content
-    extracted_text = DocumentProcessor.extract_text(file_path, ext)
-
-    doc = Document(
-        filename=saved_filename,
-        original_filename=file.filename,
-        file_type=ext.replace(".", "").upper(),
-        file_size=file_size,
-        storage_path=file_path,
-        extracted_text=extracted_text,
-        status="Uploaded",
-        priority="Medium",
-        uploaded_by=uploaded_by
-    )
-    db.add(doc)
-    db.commit()
-    db.refresh(doc)
-
-    # Create Audit Log
-    log = AuditLog(
-        user_name=uploaded_by,
-        user_role="Admin",
-        action="Uploaded Document",
-        document_name=doc.original_filename,
-        status="Success",
-        details=f"Uploaded file {doc.original_filename} ({doc.file_size} bytes)"
-    )
-    db.add(log)
-    db.commit()
-
-    return {"message": "Document uploaded successfully", "id": doc.id}
 
 @router.post("/{doc_id}/analyze")
-def analyze_document(doc_id: int, db: Session = Depends(get_db)):
-    doc = db.query(Document).filter(Document.id == doc_id).first()
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
+def analyze_document(doc_id:str):
+    s=_doc(doc_id)
+    if not s: raise HTTPException(404,"Document not found")
+    d=s.to_dict() or {}; name=d.get("original_filename",d.get("filename","document")); res=AIService().analyze_document(name,d.get("extracted_text") or ""); now=utc_now()
+    collection("documents").document(str(doc_id)).update({"status":"Pending Approval","priority":res.get("priority","Medium"),"confidence":res.get("confidence",.9),"updated_at":now})
+    collection("analyses").document(str(doc_id)).set({"id":str(doc_id),"document_id":str(doc_id),"document_type":res.get("document_type","General"),"confidence":res.get("confidence",.9),"priority":res.get("priority","Medium"),"priority_reason":res.get("priority_reason",""),"risk_level":res.get("risk_level","LOW"),"risk_score":res.get("risk_score",10),"extracted_fields":res.get("extracted_fields",{}),"risks":res.get("risks",[]),"summary":res.get("summary",[]),"recommended_action":res.get("recommended_action","Review"),"department":res.get("department","Operations"),"assigned_role":res.get("assigned_role","Manager"),"sla_hours":res.get("sla_hours",24),"raw_ai_response":res,"created_at":now,"updated_at":now})
+    for ws in list(collection("workflows").stream()):
+        w=ws.to_dict() or {}
+        if str(w.get("document_id"))==str(doc_id):
+            for ss in list(collection("workflow_steps").stream()):
+                if str((ss.to_dict() or {}).get("workflow_id"))==ws.id: collection("workflow_steps").document(ss.id).delete()
+            collection("workflows").document(ws.id).delete()
+    steps=res.get("workflow",[]) or [{"step_name":"Document Ingestion","node_type":"Start","role":"System","status":"Completed"},{"step_name":"AI Content Analysis","node_type":"AI Analysis","role":"AI System","status":"Completed"},{"step_name":"Field Validation","node_type":"Document Validation","role":"System","status":"Completed"},{"step_name":f"{res.get('assigned_role','Manager')} Signoff","node_type":"Approval","role":res.get("assigned_role","Manager"),"status":"Active"},{"step_name":"Archival & ERP Sync","node_type":"End","role":"System","status":"Pending"}]
+    active=next((i for i,x in enumerate(steps) if x.get("status")=="Active"),0); wid=new_id(); wname=f"{res.get('document_type','General')} Routing Workflow"
+    collection("workflows").document(wid).set({"id":wid,"document_id":str(doc_id),"name":wname,"description":f"Automated AI routing workflow for {name}","status":"Active","current_step_index":active,"created_at":now,"updated_at":now})
+    for i,x in enumerate(steps):
+        sid=new_id(); collection("workflow_steps").document(sid).set({"id":sid,"workflow_id":wid,"step_index":i,"step_name":x.get("step_name",f"Step {i+1}"),"node_type":x.get("node_type","Approval"),"role":x.get("role","Manager"),"status":x.get("status","Pending"),"completed_at":now if x.get("status")=="Completed" else None,"comments":None})
+    _audit("Analyzed Document",name,wname,"AI Engine","System","Success",f"AI Classified as {res.get('document_type','General')} ({int(res.get('confidence',.9)*100)}% confidence). Risk Level: {res.get('risk_level','LOW')}")
+    return {"message":"Analysis completed successfully","doc_id":str(doc_id)}
 
-    ai_service = AIService()
-    res = ai_service.analyze_document(doc.original_filename, doc.extracted_text or "")
-
-    # Update doc
-    doc.status = "Pending Approval"
-    doc.priority = res.get("priority", "Medium")
-    doc.confidence = res.get("confidence", 0.90)
-
-    # Save or update Analysis
-    if doc.analysis:
-        analysis = doc.analysis
-    else:
-        analysis = DocumentAnalysis(document_id=doc.id)
-        db.add(analysis)
-
-    analysis.document_type = res.get("document_type", "General")
-    analysis.confidence = res.get("confidence", 0.90)
-    analysis.priority = res.get("priority", "Medium")
-    analysis.priority_reason = res.get("priority_reason", "")
-    analysis.risk_level = res.get("risk_level", "LOW")
-    analysis.risk_score = res.get("risk_score", 10)
-    analysis.extracted_fields = res.get("extracted_fields", {})
-    analysis.risks = res.get("risks", [])
-    analysis.summary = res.get("summary", [])
-    analysis.recommended_action = res.get("recommended_action", "Review")
-    analysis.department = res.get("department", "Operations")
-    analysis.assigned_role = res.get("assigned_role", "Manager")
-    analysis.sla_hours = res.get("sla_hours", 24)
-    analysis.raw_ai_response = res
-
-    # Create or update Workflow automatically based on AI response
-    if doc.workflows:
-        for old_wf in list(doc.workflows):
-            db.delete(old_wf)
-        db.commit()
-
-    raw_steps = res.get("workflow", [])
-    if not raw_steps:
-        raw_steps = [
-            {"step_name": "Document Ingestion", "node_type": "Start", "role": "System", "status": "Completed"},
-            {"step_name": "AI Content Analysis", "node_type": "AI Analysis", "role": "AI System", "status": "Completed"},
-            {"step_name": "Field Validation", "node_type": "Document Validation", "role": "System", "status": "Completed"},
-            {"step_name": f"{analysis.assigned_role} Signoff", "node_type": "Approval", "role": analysis.assigned_role, "status": "Active"},
-            {"step_name": "Archival & ERP Sync", "node_type": "End", "role": "System", "status": "Pending"}
-        ]
-
-    active_idx = 0
-    for i, s in enumerate(raw_steps):
-        if s.get("status") == "Active":
-            active_idx = i
-            break
-
-    wf = Workflow(
-        document_id=doc.id,
-        name=f"{analysis.document_type} Routing Workflow",
-        description=f"Automated AI routing workflow for {doc.original_filename}",
-        status="Active",
-        current_step_index=active_idx
-    )
-    db.add(wf)
-    db.commit()
-    db.refresh(wf)
-
-    for i, s in enumerate(raw_steps):
-        w_step = WorkflowStep(
-            workflow_id=wf.id,
-            step_index=i,
-            step_name=s.get("step_name", f"Step {i+1}"),
-            node_type=s.get("node_type", "Approval"),
-            role=s.get("role", "Manager"),
-            status=s.get("status", "Pending")
-        )
-        if s.get("status") == "Completed":
-            w_step.completed_at = datetime.utcnow()
-        db.add(w_step)
-
-    db.commit()
-
-    # Audit log
-    log = AuditLog(
-        user_name="AI Engine",
-        user_role="System",
-        action="Analyzed Document",
-        document_name=doc.original_filename,
-        workflow_name=f"{analysis.document_type} Routing Workflow",
-        status="Success",
-        details=f"AI Classified as {analysis.document_type} ({int(analysis.confidence * 100)}% confidence). Risk Level: {analysis.risk_level}"
-    )
-    db.add(log)
-    db.commit()
-
-    return {"message": "Analysis completed successfully", "doc_id": doc.id}
 
 @router.post("/{doc_id}/approve")
-def approve_document(doc_id: int, req: ApprovalRequest, db: Session = Depends(get_db)):
-    doc = db.query(Document).filter(Document.id == doc_id).first()
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
+def approve_document(doc_id:str,req:ApprovalRequest):
+    s=_doc(doc_id)
+    if not s: raise HTTPException(404,"Document not found")
+    d=s.to_dict() or {}; action=req.action.strip().lower(); status="Approved" if action=="approve" else "Rejected" if action=="reject" else "Under Review"; now=utc_now()
+    collection("documents").document(str(doc_id)).update({"status":status,"updated_at":now})
+    aid=new_id(); collection("approvals").document(aid).set({"id":aid,"document_id":str(doc_id),"action":req.action,"approver_name":req.approver_name,"approver_role":req.approver_role,"comments":req.comments or f"{req.action} decision submitted via decision modal.","created_at":now})
+    wname=None
+    for ws in collection("workflows").stream():
+        w=ws.to_dict() or {}
+        if str(w.get("document_id"))!=str(doc_id): continue
+        wname=wname or w.get("name"); steps=_steps(ws.id); active=next((x for x in steps if x.get("status")=="Active"),None)
+        if not active: continue
+        if action=="approve":
+            collection("workflow_steps").document(active["id"]).update({"status":"Completed","completed_at":now,"comments":req.comments}); nxt=next((x for x in steps if x.get("step_index")==active.get("step_index",0)+1),None)
+            if nxt: collection("workflow_steps").document(nxt["id"]).update({"status":"Active"}); collection("workflows").document(ws.id).update({"current_step_index":nxt.get("step_index",0),"updated_at":now})
+            else: collection("workflows").document(ws.id).update({"status":"Completed","updated_at":now})
+        elif action=="reject":
+            collection("workflow_steps").document(active["id"]).update({"status":"Rejected","completed_at":now,"comments":req.comments}); collection("workflows").document(ws.id).update({"status":"Failed","updated_at":now})
+        else:
+            collection("workflow_steps").document(active["id"]).update({"status":"Active","comments":f"Review requested: {req.comments or 'Under compliance review'}"}); collection("workflows").document(ws.id).update({"status":"Under Review","updated_at":now})
+    label="Approved Document" if action=="approve" else "Rejected Document" if action=="reject" else "Review Requested"
+    _audit(label,d.get("original_filename"),wname,req.approver_name,req.approver_role,"Success" if action=="approve" else "Warning",f"{label} by {req.approver_name} ({req.approver_role}). Comments: {req.comments or 'None'}")
+    return {"message":f"Document {req.action.lower()}d successfully"}
 
-    doc.status = "Approved" if req.action == "Approve" else "Rejected" if req.action == "Reject" else "Under Review"
-
-    # Add approval record
-    appr = Approval(
-        document_id=doc.id,
-        action=req.action,
-        approver_name=req.approver_name,
-        approver_role=req.approver_role,
-        comments=req.comments or f"{req.action} decision submitted via decision modal."
-    )
-    db.add(appr)
-
-    # Progress workflow step if present
-    for wf in doc.workflows:
-        active_step = db.query(WorkflowStep).filter(
-            WorkflowStep.workflow_id == wf.id,
-            WorkflowStep.status == "Active"
-        ).first()
-        if active_step:
-            if req.action == "Approve":
-                active_step.status = "Completed"
-                active_step.completed_at = datetime.utcnow()
-                active_step.comments = req.comments
-
-                next_step = db.query(WorkflowStep).filter(
-                    WorkflowStep.workflow_id == wf.id,
-                    WorkflowStep.step_index == active_step.step_index + 1
-                ).first()
-                if next_step:
-                    next_step.status = "Active"
-                    wf.current_step_index = next_step.step_index
-                else:
-                    wf.status = "Completed"
-            elif req.action == "Reject":
-                active_step.status = "Rejected"
-                active_step.completed_at = datetime.utcnow()
-                active_step.comments = req.comments
-                wf.status = "Failed"
-            else: # Request Changes / Under Review
-                active_step.status = "Active"
-                active_step.comments = f"Review requested: {req.comments or 'Under compliance review'}"
-                wf.status = "Under Review"
-
-    db.commit()
-
-    action_label = "Approved Document" if req.action == "Approve" else "Rejected Document" if req.action == "Reject" else "Review Requested"
-    log = AuditLog(
-        user_name=req.approver_name,
-        user_role=req.approver_role,
-        action=action_label,
-        document_name=doc.original_filename,
-        workflow_name=doc.workflows[0].name if doc.workflows else None,
-        status="Success" if req.action == "Approve" else "Warning",
-        details=f"{action_label} by {req.approver_name} ({req.approver_role}). Comments: {req.comments or 'None'}"
-    )
-    db.add(log)
-    db.commit()
-
-    return {"message": f"Document {req.action.lower()}d successfully"}
 
 @router.delete("/{doc_id}")
-def delete_document(doc_id: int, db: Session = Depends(get_db)):
-    doc = db.query(Document).filter(Document.id == doc_id).first()
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
-
-    filename = doc.original_filename
-    db.delete(doc)
-    db.commit()
-
-    log = AuditLog(
-        user_name="Admin",
-        user_role="Admin",
-        action="Deleted Document",
-        document_name=filename,
-        status="Warning",
-        details=f"Document {filename} removed from system."
-    )
-    db.add(log)
-    db.commit()
-
-    return {"message": "Document deleted successfully"}
+def delete_document(doc_id:str):
+    s=_doc(doc_id)
+    if not s: raise HTTPException(404,"Document not found")
+    d=s.to_dict() or {}; name=d.get("original_filename",d.get("filename",str(doc_id)))
+    collection("documents").document(str(doc_id)).delete(); collection("analyses").document(str(doc_id)).delete()
+    for ws in list(collection("workflows").stream()):
+        if str((ws.to_dict() or {}).get("document_id"))==str(doc_id):
+            for ss in list(collection("workflow_steps").stream()):
+                if str((ss.to_dict() or {}).get("workflow_id"))==ws.id: collection("workflow_steps").document(ss.id).delete()
+            collection("workflows").document(ws.id).delete()
+    for ss in list(collection("approvals").stream()):
+        if str((ss.to_dict() or {}).get("document_id"))==str(doc_id): collection("approvals").document(ss.id).delete()
+    _audit("Deleted Document",name,details=f"Document {name} removed from system.")
+    return {"message":"Document deleted successfully"}
