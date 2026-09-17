@@ -1,4 +1,5 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+  || (import.meta.env.DEV ? '/api' : 'https://deepflow-ai-1.onrender.com/api');
 
 export async function fetchApi(endpoint, options = {}) {
   try {
@@ -35,8 +36,11 @@ export const api = {
     return fetch(`${API_BASE}/documents/upload`, {
       method: 'POST',
       body: formData,
-    }).then(res => {
-      if (!res.ok) throw new Error('Upload failed');
+    }).then(async (res) => {
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: 'Upload failed' }));
+        throw new Error(err.detail || 'Upload failed');
+      }
       return res.json();
     });
   },
@@ -60,7 +64,7 @@ export const api = {
   },
 
   // AI Chat
-  chatWithDoc: (document_id, question) => fetchApi('/ai/chat', { method: 'POST', body: JSON.stringify({ document_id, question }) }),
+  chatWithDoc: (document_id, question) => fetchApi('/ai/chat', { method: 'POST', body: JSON.stringify({ document_id, question })),
 
   // Settings
   getSettings: () => fetchApi('/settings'),
