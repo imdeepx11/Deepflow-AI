@@ -1,14 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bell, ChevronDown, FileText, LogOut, Mail, Moon, Search, Sparkles, Sun, X, ArrowUpRight } from 'lucide-react';
+import { Bell, ChevronDown, FileText, LogOut, Mail, Moon, Search, Sparkles, Sun, X, ArrowUpRight, LayoutDashboard, Files, ScanSearch, Workflow, ChartNoAxesCombined, Settings as SettingsIcon, Plus } from 'lucide-react';
 import { api } from '../api';
 
 const NAV = [
-  ['dashboard', 'Dashboard'],
-  ['documents', 'Documents'],
-  ['analyzer', 'AI Analyzer'],
-  ['workflows', 'Workflows'],
-  ['analytics', 'Analytics'],
-  ['settings', 'Settings']
+  ['dashboard', 'Dashboard', LayoutDashboard],
+  ['documents', 'Documents', Files],
+  ['analyzer', 'AI Analyzer', ScanSearch],
+  ['workflows', 'Workflows', Workflow],
+  ['analytics', 'Analytics', ChartNoAxesCombined],
+  ['settings', 'Settings', SettingsIcon]
 ];
 
 export default function Header({ currentPage, setCurrentPage, onOpenUpload, user, onNavigateToAnalyzer, onLogout, darkMode, onToggleDarkMode }) {
@@ -52,31 +52,49 @@ export default function Header({ currentPage, setCurrentPage, onOpenUpload, user
 
   const userName = user?.name || user?.email?.split('@')[0] || 'Administrator';
   const initials = userName.slice(0, 1).toUpperCase();
+  const currentLabel = NAV.find(([id]) => id === currentPage)?.[1] || 'DeepFlow AI';
 
   return (
     <>
+      <aside className="workspace-sidebar" aria-label="Workspace navigation">
+        <button className="sidebar-brand" onClick={() => setCurrentPage('dashboard')} aria-label="Go to dashboard">
+          <span className="brand-mark"><Sparkles size={18} /></span>
+          <span className="sidebar-brand-copy">
+            <span className="brand-name">DeepFlow</span>
+            <span className="brand-subtitle">Intelligent Documents,<br />Smarter Workflows</span>
+          </span>
+        </button>
+
+        <div className="sidebar-section-label">Workspace</div>
+        <nav className="sidebar-nav" aria-label="Primary navigation">
+          {NAV.map(([id, label, Icon]) => (
+            <button
+              key={id}
+              type="button"
+              className={`sidebar-nav-link ${currentPage === id ? 'active' : ''}`}
+              onClick={() => setCurrentPage(id)}
+            >
+              <Icon size={17} strokeWidth={1.8} />
+              <span>{label}</span>
+            </button>
+          ))}
+        </nav>
+
+        <div className="sidebar-bottom">
+          <button className="sidebar-upload" type="button" onClick={onOpenUpload}>
+            <Plus size={15} />
+            <span>Upload document</span>
+          </button>
+          <div className="sidebar-credit">DeepFlow AI · Workspace</div>
+        </div>
+      </aside>
+
       <header className="editorial-header">
         <div className="editorial-header-inner">
-          <button className="brand-block" onClick={() => setCurrentPage('dashboard')} aria-label="Go to dashboard">
-            <span className="brand-mark"><Sparkles size={18} /></span>
-            <span className="brand-copy">
-              <span className="brand-name">DeepFlow</span>
-              <span className="brand-subtitle">Intelligent Documents,<br />Smarter Workflows</span>
-            </span>
-          </button>
-
-          <nav className="top-nav" aria-label="Primary navigation">
-            {NAV.map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                className={`nav-link ${currentPage === id ? 'active' : ''}`}
-                onClick={() => setCurrentPage(id)}
-              >
-                {label}
-              </button>
-            ))}
-          </nav>
+          <div className="topbar-page-context" aria-label="Current page">
+            <span className="topbar-kicker">DeepFlow AI</span>
+            <span className="topbar-current">{currentLabel}</span>
+          </div>
 
           <div className="header-search" ref={searchRef}>
             <Search size={15} />
@@ -111,20 +129,14 @@ export default function Header({ currentPage, setCurrentPage, onOpenUpload, user
                     <ArrowUpRight size={14} />
                   </button>
                 )) : (
-                  <div className="popover-item"><span style={{fontSize:10,color:'var(--muted)'}}>No matching documents.</span></div>
+                  <div className="popover-item"><span style={{ fontSize: 10, color: 'var(--muted)' }}>No matching documents.</span></div>
                 )}
               </div>
             )}
           </div>
 
           <div className="header-actions">
-            <button
-              className="contact-btn"
-              type="button"
-              onClick={() => setContactOpen(true)}
-              title="Contact us"
-              aria-label="Contact us"
-            >
+            <button className="header-icon-btn" type="button" onClick={() => setContactOpen(true)} title="Contact us" aria-label="Contact us">
               <Mail size={16} />
             </button>
 
@@ -160,7 +172,7 @@ export default function Header({ currentPage, setCurrentPage, onOpenUpload, user
               {profileOpen && (
                 <div className="notification-popover profile-menu">
                   <button className="popover-item" type="button" onClick={() => { setCurrentPage('settings'); setProfileOpen(false); }}>Profile & settings <ArrowUpRight size={13} /></button>
-                  <button className="popover-item" type="button" onClick={onLogout}><span className="popover-document"><LogOut size={13}/> Sign out</span></button>
+                  <button className="popover-item" type="button" onClick={onLogout}><span className="popover-document"><LogOut size={13} /> Sign out</span></button>
                 </div>
               )}
             </div>
