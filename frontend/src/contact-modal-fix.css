@@ -106,3 +106,272 @@ html.dark .contact-phone-link:hover {
     min-height: 42px !important;
   }
 }
+
+/* Upload dialog — final alignment and theme overrides */
+.upload-modal {
+  overflow: hidden !important;
+}
+
+.upload-modal-head {
+  min-height: 88px !important;
+  box-sizing: border-box !important;
+}
+
+.upload-modal-title {
+  display: block !important;
+  margin-top: 6px !important;
+  line-height: 1.08 !important;
+}
+
+.upload-modal-body {
+  padding: 24px !important;
+}
+
+.upload-dropzone {
+  width: 100% !important;
+  min-height: 190px !important;
+  padding: 30px 24px !important;
+  border: 1px dashed #b9ae9e !important;
+  border-radius: 18px !important;
+  background: #faf6ee !important;
+  color: #30352f !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  text-align: center !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+  font: inherit !important;
+}
+
+.upload-dropzone:hover {
+  border-color: #879d8d !important;
+  background: #f6f0e5 !important;
+}
+
+.upload-dropzone-icon {
+  width: 48px !important;
+  height: 48px !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 14px !important;
+  background: #eef2ec !important;
+  color: #315d48 !important;
+  flex: 0 0 auto !important;
+}
+
+.upload-dropzone-title,
+.upload-dropzone-meta {
+  display: block !important;
+}
+
+.upload-dropzone-title {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+  color: #30352f !important;
+}
+
+.upload-dropzone-meta {
+  font-size: 10px !important;
+  line-height: 1.5 !important;
+  color: #77756e !important;
+}
+
+.upload-file-input,
+input.upload-file-input,
+.upload-modal input[type="file"] {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  position: absolute !important;
+}
+
+.upload-file-card {
+  width: 100% !important;
+  min-height: 88px !important;
+  padding: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  box-sizing: border-box !important;
+  border: 1px solid #e2d9cb !important;
+  border-radius: 16px !important;
+  background: #faf6ee !important;
+}
+
+.upload-file-main {
+  display: flex !important;
+  align-items: center !important;
+  min-width: 0 !important;
+  gap: 11px !important;
+}
+
+.upload-file-copy {
+  min-width: 0 !important;
+}
+
+.upload-file-copy strong,
+.upload-file-copy span {
+  display: block !important;
+}
+
+.upload-file-copy strong {
+  font-size: 11px !important;
+  color: #30352f !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.upload-file-copy span {
+  margin-top: 3px !important;
+  font-size: 9px !important;
+  color: #77756e !important;
+}
+
+.upload-error {
+  margin-bottom: 14px !important;
+  padding: 10px 12px !important;
+  border-radius: 12px !important;
+  background: #f4dfda !important;
+  border: 1px solid #e4c4bd !important;
+  color: #7b3c34 !important;
+  font-size: 10px !important;
+  line-height: 1.5 !important;
+}
+
+.upload-status {
+  margin-top: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  font-size: 10px !important;
+  line-height: 1.4 !important;
+  color: #315d48 !important;
+}
+
+.upload-modal-footer {
+  padding: 16px 24px !important;
+  min-height: 78px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 10px !important;
+  background: #f7f2e9 !important;
+  border-top: 1px solid #e1d8ca !important;
+}
+
+/* Dark mode: every upload-modal section uses the same dark surface */
+body.dark-mode .upload-modal,
+html.dark .upload-modal {
+  background: #171a1f !important;
+  color: #f3efe6 !important;
+  border-color: #343a43 !important;
+}
+
+body.dark-mode .upload-modal-head,
+html.dark .upload-modal-head {
+  background: #171a1f !important;
+  border-bottom-color: #343a43 !important;
+}
+
+body.dark-mode .upload-modal-body,
+html.dark .upload-modal-body {
+  background: #171a1f !important;
+}
+
+body.dark-mode .upload-dropzone,
+html.dark .upload-dropzone {
+  border-color: #4a555d !important;
+  background: #20242a !important;
+  color: #f3efe6 !important;
+}
+
+body.dark-mode .upload-dropzone:hover,
+html.dark .upload-dropzone:hover {
+  border-color: #8fa996 !important;
+  background: #252a30 !important;
+}
+
+body.dark-mode .upload-dropzone-icon,
+html.dark .upload-dropzone-icon {
+  background: #2a332f !important;
+  color: #a9c0ad !important;
+}
+
+body.dark-mode .upload-dropzone-title,
+html.dark .upload-dropzone-title {
+  color: #f3efe6 !important;
+}
+
+body.dark-mode .upload-dropzone-meta,
+html.dark .upload-dropzone-meta {
+  color: #aeb4be !important;
+}
+
+body.dark-mode .upload-file-card,
+html.dark .upload-file-card {
+  border-color: #343a43 !important;
+  background: #20242a !important;
+}
+
+body.dark-mode .upload-file-copy strong,
+html.dark .upload-file-copy strong {
+  color: #f3efe6 !important;
+}
+
+body.dark-mode .upload-file-copy span,
+html.dark .upload-file-copy span {
+  color: #aeb4be !important;
+}
+
+body.dark-mode .upload-error,
+html.dark .upload-error {
+  background: #392629 !important;
+  border-color: #624044 !important;
+  color: #efb2b8 !important;
+}
+
+body.dark-mode .upload-status,
+html.dark .upload-status {
+  color: #a9c0ad !important;
+}
+
+body.dark-mode .upload-modal-footer,
+html.dark .upload-modal-footer {
+  background: #171a1f !important;
+  border-top-color: #343a43 !important;
+}
+
+body.dark-mode .upload-modal-footer .secondary-btn,
+html.dark .upload-modal-footer .secondary-btn {
+  color: #f3efe6 !important;
+  border-color: #48505a !important;
+  background: transparent !important;
+}
+
+body.dark-mode .upload-modal-footer .primary-btn,
+html.dark .upload-modal-footer .primary-btn {
+  background: #8fa996 !important;
+  color: #111613 !important;
+}
+
+@media (max-width: 560px) {
+  .upload-modal-body { padding: 18px !important; }
+  .upload-modal-footer {
+    padding: 14px 18px !important;
+    justify-content: stretch !important;
+  }
+  .upload-modal-footer .secondary-btn,
+  .upload-modal-footer .primary-btn {
+    flex: 1 1 0 !important;
+  }
+}
