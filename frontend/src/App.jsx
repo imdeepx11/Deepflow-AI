@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './App.css';
 import './ledger-overrides.css';
+import './dark-mode.css';
 import Header from './components/Header';
 import UploadModal from './components/UploadModal';
 
