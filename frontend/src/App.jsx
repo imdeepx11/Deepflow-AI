@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import './App.css';
-import './editorial-premium.css';
 import Header from './components/Header';
 import UploadModal from './components/UploadModal';
 
