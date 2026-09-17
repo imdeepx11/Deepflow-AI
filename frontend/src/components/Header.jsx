@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bell, ChevronDown, FileText, LogOut, Mail, Moon, Search, Sparkles, Sun, X, ArrowUpRight, LayoutDashboard, Files, ScanSearch, Workflow, ChartNoAxesCombined, Settings as SettingsIcon } from 'lucide-react';
+import { Bell, ChevronDown, FileText, LogOut, Mail, Moon, Phone, Search, Sparkles, Sun, X, ArrowUpRight, LayoutDashboard, Files, ScanSearch, Workflow, ChartNoAxesCombined, Settings as SettingsIcon } from 'lucide-react';
 import { api } from '../api';
 
 const NAV = [
@@ -10,6 +10,9 @@ const NAV = [
   ['analytics', 'Analytics', ChartNoAxesCombined],
   ['settings', 'Settings', SettingsIcon]
 ];
+
+const CONTACT_EMAIL = 'mrdeepak.g11@gmail.com';
+const CONTACT_PHONE = '9458777101';
 
 export default function Header({ currentPage, setCurrentPage, onOpenUpload, user, onNavigateToAnalyzer, onLogout, darkMode, onToggleDarkMode }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -188,11 +191,16 @@ export default function Header({ currentPage, setCurrentPage, onOpenUpload, user
               </div>
               <button className="modal-close" type="button" onClick={() => setContactOpen(false)} aria-label="Close"><X size={18} /></button>
             </div>
-            <p>For product questions, feedback, partnerships, or support, start a message from your email client.</p>
-            <a className="primary-btn contact-mail-link" href="mailto:mrdeepak.g11@gmail.com?subject=DeepFlow%20AI%20Enquiry" onClick={() => setContactOpen(false)}>
-              <Mail size={14} /> Email DeepFlow
-            </a>
-            <div className="contact-note">Send your enquiry to the DeepFlow project email.</div>
+            <p>For product questions, feedback, partnerships, or support, contact DeepFlow directly by email or phone.</p>
+            <div className="contact-actions">
+              <a className="primary-btn contact-mail-link" href={`mailto:${CONTACT_EMAIL}?subject=DeepFlow%20AI%20Enquiry`} onClick={() => setContactOpen(false)}>
+                <Mail size={14} /> Email DeepFlow
+              </a>
+              <a className="secondary-btn contact-phone-link" href={`tel:${CONTACT_PHONE}`} onClick={() => setContactOpen(false)}>
+                <Phone size={14} /> Call {CONTACT_PHONE}
+              </a>
+            </div>
+            <div className="contact-note">Email: <strong>{CONTACT_EMAIL}</strong><br />Phone: <strong>{CONTACT_PHONE}</strong></div>
           </div>
         </div>
       )}
