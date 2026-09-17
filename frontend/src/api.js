@@ -64,7 +64,7 @@ export const api = {
   },
 
   // AI Chat
-  chatWithDoc: (document_id, question) => fetchApi('/ai/chat', { method: 'POST', body: JSON.stringify({ document_id, question })),
+  chatWithDoc: (document_id, question) => fetchApi('/ai/chat', { method: 'POST', body: JSON.stringify({ document_id, question }) }),
 
   // Settings
   getSettings: () => fetchApi('/settings'),
