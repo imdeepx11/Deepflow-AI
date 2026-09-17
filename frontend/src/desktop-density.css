@@ -1,0 +1,141 @@
+/* DeepFlow desktop density: tuned so the 100% browser view feels as balanced as the previous 90% view. */
+@media (min-width: 1100px) {
+  .editorial-header-inner {
+    min-height: 72px;
+    gap: 16px;
+  }
+
+  .brand-block {
+    min-width: 200px;
+  }
+
+  .brand-name {
+    font-size: 26px;
+  }
+
+  .brand-subtitle {
+    font-size: 8px;
+    letter-spacing: .13em;
+  }
+
+  .top-nav {
+    gap: 2px;
+  }
+
+  .nav-link {
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+
+  .header-search {
+    width: 235px;
+    flex-basis: 235px;
+  }
+
+  .header-actions {
+    gap: 5px;
+  }
+
+  .editorial-main {
+    width: calc(100% - 48px);
+    max-width: 1500px;
+    padding: 24px 0 50px;
+  }
+
+  .page-head {
+    margin-bottom: 18px;
+    gap: 14px;
+  }
+
+  .page-title {
+    font-size: clamp(30px, 3.5vw, 48px);
+  }
+
+  .page-intro {
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .hero-grid {
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .hero-copy {
+    padding: 24px 6px 22px 18px;
+  }
+
+  .hero-title {
+    font-size: clamp(46px, 5.3vw, 72px);
+  }
+
+  .hero-text {
+    max-width: 500px;
+    margin: 14px 0 18px;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .editorial-hero-art {
+    min-height: 300px;
+  }
+
+  .kpi-grid {
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .kpi-card {
+    padding: 14px;
+    min-height: 108px;
+  }
+
+  .kpi-value {
+    margin-top: 5px;
+    font-size: 32px;
+  }
+
+  .bento-grid {
+    gap: 12px;
+  }
+
+  .card-padding,
+  .insight-card,
+  .status-card,
+  .ledger-panel,
+  .ledger-note-card {
+    padding: 18px;
+  }
+
+  .card-title {
+    font-size: 20px;
+  }
+
+  .docs-card,
+  .status-card {
+    min-height: 0;
+  }
+
+  .editorial-table th {
+    padding: 10px 8px;
+  }
+
+  .editorial-table td {
+    padding: 12px 8px;
+  }
+
+  .developer-credit {
+    left: 18px !important;
+    right: auto !important;
+    bottom: 14px !important;
+  }
+}
+
+@media (max-width: 1099px) {
+  .developer-credit {
+    left: 14px !important;
+    right: auto !important;
+    bottom: 12px !important;
+  }
+}
