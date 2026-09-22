@@ -511,3 +511,45 @@ body {
   flex: 0 0 auto;
   display: block;
 }
+
+
+/* Action-button alignment: keep icon + label centered on one baseline */
+.primary-btn,
+.secondary-btn,
+.header-icon-btn,
+.ghost-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  vertical-align: middle;
+  line-height: 1 !important;
+}
+.primary-btn,
+.secondary-btn {
+  gap: 8px !important;
+  white-space: nowrap;
+}
+.primary-btn svg,
+.secondary-btn svg,
+.header-icon-btn svg,
+.ghost-btn svg {
+  display: block;
+  flex: 0 0 auto;
+  align-self: center;
+}
+.tab-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+}
+.settings-nav .tab-btn {
+  justify-content: flex-start !important;
+}
+@media (min-width: 1100px) {
+  .primary-btn,
+  .secondary-btn {
+    min-height: 50px;
+    padding-inline: 20px !important;
+  }
+}
