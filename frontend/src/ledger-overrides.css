@@ -553,3 +553,74 @@ body {
     padding-inline: 20px !important;
   }
 }
+
+
+/* Document Analyzer — use available canvas for readable type */
+@media (min-width: 1100px) {
+  .analyzer-viewer,
+  .analyzer-info .data-card,
+  .analyzer-info .action-card {
+    font-size: 16px;
+  }
+
+  .analyzer-grid { gap: 18px !important; }
+  .analyzer-info { gap: 16px !important; }
+
+  .analyzer-viewer .viewer-head {
+    min-height: 52px;
+    padding: 0 18px;
+  }
+  .analyzer-viewer .viewer-chip {
+    font-size: 14px !important;
+  }
+
+  .analyzer-viewer .viewer-sheet {
+    min-height: 560px;
+    padding: 28px !important;
+  }
+  .analyzer-viewer .viewer-sheet h4 {
+    font-size: 22px !important;
+  }
+  .analyzer-viewer .viewer-sheet > div {
+    font-size: 16px !important;
+    line-height: 1.7 !important;
+  }
+
+  .analyzer-info .card-title { font-size: 29px !important; }
+  .analyzer-info .page-kicker { font-size: 13px !important; }
+  .analyzer-info .field-key { font-size: 13px !important; }
+  .analyzer-info .field-value { font-size: 17px !important; line-height: 1.45; }
+  .analyzer-info .risk-score { font-size: 46px !important; }
+  .analyzer-info .card-subtitle { font-size: 15px !important; }
+  .analyzer-info .action-card { padding: 26px 28px !important; }
+  .analyzer-info .action-card h3 { font-size: 30px !important; }
+  .analyzer-info .action-card p { font-size: 15px !important; line-height: 1.65 !important; }
+
+  /* Empty analyzer state */
+  .editorial-page > .paper-card.card-padding:has(.secondary-btn) {
+    min-height: 250px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 44px 52px !important;
+  }
+  .editorial-page > .paper-card.card-padding:has(.secondary-btn) .secondary-btn {
+    min-height: 52px;
+    width: fit-content;
+    padding: 0 22px !important;
+    font-size: 16px !important;
+  }
+  .editorial-page > .paper-card.card-padding:has(.secondary-btn) p {
+    margin-top: 20px !important;
+    font-size: 20px !important;
+    line-height: 1.5;
+  }
+}
+
+/* Analyzer actions and chat controls stay legible */
+.analyzer-info input,
+.analyzer-info .tab-btn,
+.analyzer-info .primary-btn,
+.analyzer-info .secondary-btn {
+  font-size: 14px !important;
+}
