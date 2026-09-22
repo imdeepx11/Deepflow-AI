@@ -416,3 +416,84 @@ body {
   .settings-panel > .card-title,
   .settings-panel .card-title { font-size: 26px !important; }
 }
+
+
+/* Unified typography and upload-button treatment across every desktop page */
+@media (min-width: 1100px) {
+  .editorial-page { font-size: 16px; }
+
+  .page-kicker { font-size: 13px !important; }
+  .page-title { font-size: clamp(40px, 4vw, 58px) !important; }
+  .page-intro { font-size: 16px !important; line-height: 1.55 !important; }
+
+  .primary-btn {
+    min-height: 48px;
+    padding: 12px 20px !important;
+    font-size: 16px !important;
+    line-height: 1.15;
+  }
+
+  .secondary-btn,
+  .ghost-btn,
+  .tab-btn,
+  .section-link {
+    font-size: 14px !important;
+  }
+
+  .card-title { font-size: 28px !important; }
+  .card-subtitle { font-size: 15px !important; line-height: 1.5 !important; }
+
+  .kpi-label { font-size: 13px !important; }
+  .kpi-value { font-size: 40px !important; }
+  .kpi-meta { font-size: 13px !important; }
+
+  .field-key { font-size: 13px !important; }
+  .editorial-input,
+  .editorial-select,
+  .filter-search input { font-size: 16px !important; }
+
+  .editorial-table { font-size: 16px !important; }
+  .editorial-table th { font-size: 12px !important; }
+  .editorial-table td { font-size: 16px !important; }
+  .doc-name { font-size: 16px !important; }
+  .doc-meta { font-size: 13px !important; }
+  .pill { font-size: 12px !important; }
+
+  .workflow-item { font-size: 16px !important; }
+  .workflow-item strong { font-size: 16px !important; }
+
+  .ledger-hero {
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px !important;
+    padding-bottom: 14px !important;
+  }
+
+  .dashboard-upload-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    margin-bottom: 3px;
+  }
+
+  .ledger-row-label { font-size: 19px !important; }
+  .ledger-value { font-size: 40px !important; }
+  .ledger-delta { font-size: 14px !important; }
+  .ledger-tally-row { font-size: 15px !important; }
+
+  .insight-label { font-size: 12px !important; }
+  .insight-item strong { font-size: 17px !important; }
+  .insight-item p { font-size: 15px !important; line-height: 1.5 !important; }
+
+  .popover-head { font-size: 12px !important; }
+  .popover-item { font-size: 14px !important; }
+  .popover-item small { font-size: 12px !important; }
+
+  .developer-credit { font-size: 12px !important; }
+}
+
+/* Tighten common vertical spacing after increasing typography */
+@media (min-width: 1100px) {
+  .page-head { margin-bottom: 14px !important; gap: 14px !important; }
+  .toolbar-card { padding: 12px 14px !important; }
+  .field-grid { gap: 10px !important; }
+}
