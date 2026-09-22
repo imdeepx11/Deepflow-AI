@@ -370,3 +370,49 @@ body {
   .editorial-table { font-size: 10px; }
   .login-field input { font-size: 12px; }
 }
+
+
+/* Settings page readability — larger type and tighter layout */
+.settings-layout { align-items: start; }
+.settings-nav { gap: 3px !important; padding: 14px !important; }
+.settings-nav .tab-btn {
+  min-height: 44px;
+  padding: 9px 12px !important;
+  gap: 8px;
+  font-size: 16px !important;
+  line-height: 1.2;
+}
+.settings-nav .tab-btn svg { width: 17px; height: 17px; flex: 0 0 auto; }
+.settings-panel { padding: 24px 28px !important; }
+.settings-panel > .card-title,
+.settings-panel .card-title { font-size: 30px !important; }
+.settings-panel .field-key { font-size: 13px !important; }
+.settings-panel .editorial-input { min-height: 44px; font-size: 16px !important; padding: 0 13px !important; }
+.settings-panel .page-intro { font-size: 15px !important; line-height: 1.55; }
+.settings-panel .workflow-item { min-height: 62px; padding: 12px 14px; }
+.settings-panel .workflow-item strong { font-size: 15px !important; }
+.settings-panel .workflow-item .card-subtitle { font-size: 13px !important; }
+.settings-panel .workflow-item > span { font-size: 12px !important; }
+.settings-panel .field-item > div { font-size: 14px !important; }
+
+@media (min-width: 1100px) {
+  .settings-layout { grid-template-columns: 220px minmax(0, 1fr) !important; gap: 12px !important; }
+  .settings-nav { padding: 12px !important; }
+  .settings-nav .tab-btn { min-height: 48px; font-size: 18px !important; }
+  .settings-panel { padding: 26px 30px !important; }
+  .settings-panel > .card-title,
+  .settings-panel .card-title { font-size: 32px !important; }
+  .settings-panel .field-key { font-size: 14px !important; }
+  .settings-panel .editorial-input { min-height: 48px; font-size: 17px !important; }
+  .settings-panel .field-grid { gap: 10px !important; }
+  .settings-panel .workflow-item { min-height: 66px; }
+}
+
+@media (max-width: 640px) {
+  .settings-layout { grid-template-columns: 1fr !important; gap: 10px !important; }
+  .settings-nav { padding: 10px !important; }
+  .settings-nav .tab-btn { min-height: 42px; font-size: 15px !important; }
+  .settings-panel { padding: 18px 16px !important; }
+  .settings-panel > .card-title,
+  .settings-panel .card-title { font-size: 26px !important; }
+}
