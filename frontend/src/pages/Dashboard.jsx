@@ -10,6 +10,7 @@ export default function Dashboard({ user, onNavigateToAnalyzer, onNavigateToDocu
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState('30d');
+  const [currentHour, setCurrentHour] = useState(() => new Date().getHours());
 
   useEffect(() => {
     const load = async () => {
@@ -28,7 +29,15 @@ export default function Dashboard({ user, onNavigateToAnalyzer, onNavigateToDocu
     load();
   }, [range]);
 
+  useEffect(() => {
+    const syncClock = () => setCurrentHour(new Date().getHours());
+    syncClock();
+    const interval = window.setInterval(syncClock, 60 * 1000);
+    return () => window.clearInterval(interval);
+  }, []);
+
   const name = user?.name || user?.email?.split('@')[0] || 'Administrator';
+  const greeting = currentHour < 12 ? 'Good morning' : currentHour < 17 ? 'Good afternoon' : 'Good evening';
   const k = analytics?.kpis || {};
   const processed = k.documents_processed ?? 0;
   const pending = k.pending_approval ?? 0;
@@ -51,7 +60,7 @@ export default function Dashboard({ user, onNavigateToAnalyzer, onNavigateToDocu
       <section className="ledger-hero">
         <div>
           <div className="page-kicker">Welcome back</div>
-          <h1 className="ledger-hero-title">Good evening, {name}</h1>
+          <h1 className="ledger-hero-title">{greeting}, {name}</h1>
           <p className="page-intro">Here's what's happening across your document workflows.</p>
         </div>
       </section>
