@@ -497,3 +497,17 @@ body {
   .toolbar-card { padding: 12px 14px !important; }
   .field-grid { gap: 10px !important; }
 }
+
+
+/* Upload action: icon and label sit on one clean baseline */
+.dashboard-upload-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 9px !important;
+  white-space: nowrap;
+}
+.dashboard-upload-btn svg {
+  flex: 0 0 auto;
+  display: block;
+}
