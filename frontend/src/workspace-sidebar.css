@@ -296,3 +296,54 @@
   .editorial-header-inner { min-height: 72px; gap: 11px; }
   .editorial-main { margin-left: 232px; margin-right: 13px; width: calc(100% - 245px); }
 }
+
+
+/* Dedicated upload control under the workspace brand */
+@media (min-width: 1100px) {
+  .sidebar-upload-button {
+    width: 42px;
+    height: 42px;
+    margin: 0 0 20px 8px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--paper-2);
+    color: var(--forest);
+    cursor: pointer;
+    transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+  }
+
+  .sidebar-upload-button:hover {
+    background: var(--white);
+    border-color: var(--gold);
+    transform: translateY(-1px);
+  }
+
+  body.dark-mode .sidebar-upload-button,
+  html.dark .sidebar-upload-button {
+    background: #1d2127;
+    border-color: #343a43;
+    color: #9ab49f;
+  }
+
+  body.dark-mode .sidebar-upload-button:hover,
+  html.dark .sidebar-upload-button:hover {
+    background: #242932;
+    border-color: #c4a064;
+  }
+}
+
+@media (max-width: 1099px) {
+  .sidebar-upload-button {
+    width: 42px;
+    height: 42px;
+    margin: 0 0 10px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--paper-2);
+    color: var(--forest);
+  }
+}
