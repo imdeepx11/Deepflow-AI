@@ -46,7 +46,7 @@
 
   /* Replace the old sidebar upload area with the project credit. */
   .top-nav::after {
-    content: 'DeepFlow AI Enterprise Automation';
+    content: 'Designed & Developed by Deepak Gupta';
     position: absolute;
     left: 14px;
     right: 14px;

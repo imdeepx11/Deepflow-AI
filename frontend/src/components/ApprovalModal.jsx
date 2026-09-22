@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Loader2, X, XCircle } from 'lucide-react';
 import { api } from '../api';
 
-export default function ApprovalModal({ isOpen, onClose, document, initialAction='Approve', onDecisionSuccess, user }) {
+export default function ApprovalModal({ isOpen, onClose, document, initialAction='Approve', onDecisionSuccess }) {
   const [action, setAction] = useState(initialAction);
   const [role, setRole] = useState('Finance Manager');
   const [comments, setComments] = useState('');
@@ -14,11 +14,9 @@ export default function ApprovalModal({ isOpen, onClose, document, initialAction
 
   const submit = async () => {
     setSubmitting(true); setError('');
-    const approverName = user?.name || 'System User';
-    const actionText = action === 'Approve' ? 'Approved' : action === 'Reject' ? 'Rejected' : 'Requested Review';
     try {
-      await api.approveDocument(document.id, {action, approver_name: approverName, approver_role:role, comments:comments || `${actionText} by ${role}.`});
-      onDecisionSuccess?.(`${document.original_filename} ${actionText.toLowerCase()} successfully.`);
+      await api.approveDocument(document.id, {action, approver_name:'Deepak Gupta', approver_role:role, comments:comments || `${action} decision submitted by ${role}.`});
+      onDecisionSuccess?.(`${document.original_filename} ${action.toLowerCase()}d successfully.`);
       onClose();
     } catch (err) { setError(err.message || 'Decision could not be saved.'); }
     finally { setSubmitting(false); }

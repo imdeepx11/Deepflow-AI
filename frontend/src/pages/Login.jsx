@@ -112,7 +112,7 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
             </div>
           </div>
 
-          <div className="login-credit">DeepFlow AI Enterprise Platform</div>
+          <div className="login-credit">Developed and Designed by <strong>Deepak Gupta</strong></div>
         </section>
 
         <section className="login-side premium-login-side">

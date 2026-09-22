@@ -11,7 +11,7 @@ const NAV = [
   ['settings', 'Settings', SettingsIcon]
 ];
 
-const CONTACT_EMAIL = 'support@deepflow.ai';
+const CONTACT_EMAIL = 'mrdeepak.g11@gmail.com';
 const CONTACT_PHONE = '9458777101';
 const GMAIL_COMPOSE_URL = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(CONTACT_EMAIL)}&su=DeepFlow%20AI%20Enquiry`;
 
@@ -80,7 +80,7 @@ export default function Header({ currentPage, setCurrentPage, onOpenUpload, user
 
         <div className="sidebar-bottom">
           <div className="sidebar-credit" aria-label="Project credit">
-            DeepFlow AI Enterprise Platform
+            Designed &amp; Developed by <strong>Deepak Gupta</strong>
           </div>
         </div>
       </aside>
