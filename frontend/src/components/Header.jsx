@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bell, ChevronDown, FileText, LogOut, Mail, Moon, Phone, Search, Sparkles, Sun, X, ArrowUpRight, LayoutDashboard, Files, ScanSearch, Workflow, ChartNoAxesCombined, Settings as SettingsIcon } from 'lucide-react';
+import { Bell, ChevronDown, FileText, LogOut, Mail, Moon, Phone, Search, Sparkles, Sun, X, ArrowUpRight, LayoutDashboard, Files, ScanSearch, Workflow, ChartNoAxesCombined, Settings as SettingsIcon, Upload } from 'lucide-react';
 import { api } from '../api';
 
 const NAV = [
@@ -69,6 +69,16 @@ export default function Header({ currentPage, setCurrentPage, onOpenUpload, user
           </span>
         </button>
 
+        <button
+          className="sidebar-upload-button"
+          type="button"
+          onClick={onOpenUpload}
+          title="Upload document"
+          aria-label="Upload document"
+        >
+          <Upload size={18} strokeWidth={1.8} />
+        </button>
+
         <div className="sidebar-section-label">Workspace</div>
         <nav className="sidebar-nav" aria-label="Primary navigation">
           {NAV.map(([id, label, Icon]) => (
@@ -120,8 +130,6 @@ export default function Header({ currentPage, setCurrentPage, onOpenUpload, user
           <div className="header-actions">
             <button className="header-icon-btn" type="button" onClick={() => setContactOpen(true)} title="Contact us" aria-label="Contact us"><Mail size={16} /></button>
             <button className="header-icon-btn" type="button" onClick={onToggleDarkMode} title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'} aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}>{darkMode ? <Sun size={16} /> : <Moon size={16} />}</button>
-            <button className="header-icon-btn" type="button" onClick={onOpenUpload} title="Upload document" aria-label="Upload document"><span className="plus-glyph">＋</span></button>
-
             <div className="header-relative">
               <button className="header-icon-btn" type="button" onClick={() => setNotificationsOpen(v => !v)} title="Notifications" aria-label="Notifications"><Bell size={16} /><span className="notification-dot" /></button>
               {notificationsOpen && <div className="notification-popover"><div className="popover-head">Notifications</div><div className="popover-item"><span><strong>Invoice analysis complete</strong><small>AI extraction is ready for review.</small></span></div><div className="popover-item"><span><strong>Workflow waiting</strong><small>A finance approval needs attention.</small></span></div><div className="popover-item"><span><strong>Audit snapshot saved</strong><small>Compliance trail updated.</small></span></div></div>}
