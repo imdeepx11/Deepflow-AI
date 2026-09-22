@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bell, ChevronDown, FileText, LogOut, Mail, Moon, Phone, Search, Sparkles, Sun, X, ArrowUpRight, LayoutDashboard, Files, ScanSearch, Workflow, ChartNoAxesCombined, Settings as SettingsIcon, Upload } from 'lucide-react';
+import { Bell, ChevronDown, FileText, LogOut, Mail, Moon, Phone, Search, Sparkles, Sun, X, ArrowUpRight, LayoutDashboard, Files, ScanSearch, Workflow, ChartNoAxesCombined, Settings as SettingsIcon,  } from 'lucide-react';
 import { api } from '../api';
 
 const NAV = [
@@ -68,17 +68,6 @@ export default function Header({ currentPage, setCurrentPage, onOpenUpload, user
             <span className="brand-subtitle">Intelligent Documents,<br />Smarter Workflows</span>
           </span>
         </button>
-
-        <button
-          className="sidebar-upload-button"
-          type="button"
-          onClick={onOpenUpload}
-          title="Upload document"
-          aria-label="Upload document"
-        >
-          <Upload size={18} strokeWidth={1.8} />
-        </button>
-
         <div className="sidebar-section-label">Workspace</div>
         <nav className="sidebar-nav" aria-label="Primary navigation">
           {NAV.map(([id, label, Icon]) => (
