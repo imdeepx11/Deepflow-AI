@@ -49,7 +49,7 @@ export default function DocumentAnalyzer({ docId, onNavigateToDocuments }) {
   };
 
   if (loading) return <div className="editorial-page"><div className="paper-card card-padding">Loading document intelligence…</div></div>;
-  if (!doc) return <div className="editorial-page"><div className="paper-card card-padding"><button className="secondary-btn" onClick={onNavigateToDocuments}><ArrowLeft size={13}/> Back to documents</button><p>No document selected.</p></div></div>;
+  if (!doc) return <div className="editorial-page"><div className="paper-card card-padding analyzer-empty-state"><button className="secondary-btn" onClick={onNavigateToDocuments}><ArrowLeft size={18}/> Back to documents</button><p>No document selected.</p></div></div>;
 
   const analysis = doc.analysis || {};
   const confidence = Math.round((doc.confidence || analysis.confidence || 0) * 100);
