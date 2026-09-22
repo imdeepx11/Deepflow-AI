@@ -1,6 +1,9 @@
 import os
+import logging
 import pymupdf as fitz  # PyMuPDF
 import docx
+
+logger = logging.getLogger(__name__)
 
 class DocumentProcessor:
     @staticmethod
@@ -14,11 +17,11 @@ class DocumentProcessor:
 
         extracted_text = ""
         try:
-            if "pdf" in ext or file_path.endswith(".pdf"):
+            if ext == ".pdf" or file_path.endswith(".pdf"):
                 extracted_text = DocumentProcessor._extract_pdf(file_path)
-            elif "docx" in ext or "doc" in ext or file_path.endswith(".docx"):
+            elif ext in [".docx", ".doc"] or file_path.endswith((".docx", ".doc")):
                 extracted_text = DocumentProcessor._extract_docx(file_path)
-            elif "txt" in ext or file_path.endswith(".txt"):
+            elif ext == ".txt" or file_path.endswith(".txt"):
                 with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                     extracted_text = f.read()
             else:
@@ -26,16 +29,17 @@ class DocumentProcessor:
                 with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                     extracted_text = f.read()
         except Exception as e:
-            extracted_text = f"[Error extracting text: {str(e)}]"
+            logger.error(f"Text extraction failed for {file_path}: {e}")
+            extracted_text = ""
 
         return extracted_text.strip()
 
     @staticmethod
     def _extract_pdf(file_path: str) -> str:
-        doc = fitz.open(file_path)
         text_parts = []
-        for page in doc:
-            text_parts.append(page.get_text())
+        with fitz.open(file_path) as doc:
+            for page in doc:
+                text_parts.append(page.get_text())
         return "\n".join(text_parts)
 
     @staticmethod

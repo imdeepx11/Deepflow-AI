@@ -479,47 +479,35 @@ Document Content:
         client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
         prompt = f"""You are an enterprise document intelligence AI. Analyze this document text and return ONLY valid JSON matching this exact structure:
 {{
-  "document_type": "Invoice",
-  "confidence": 0.96,
-  "priority": "LOW",
-  "priority_reason": "The invoice is marked PAID and does not require payment processing.",
-  "risk_level": "LOW",
-  "risk_score": 12,
+  "document_type": "<Invoice|Purchase Order|Contract|Resume|Loan Application|Other>",
+  "confidence": 0.95,
+  "priority": "<LOW|MEDIUM|HIGH|CRITICAL>",
+  "priority_reason": "<Clear concise explanation for the priority classification>",
+  "risk_level": "<LOW|MEDIUM|HIGH>",
+  "risk_score": 15,
   "summary": [
-    "Invoice INV-3337 issued by DEMO - Sliced Invoices to Test Business for Web Design.",
-    "Total amount is $93.50 ($85.00 subtotal + $8.50 tax).",
-    "Invoice status is confirmed as PAID with watermark verification."
+    "<Key fact 1 from document>",
+    "<Key fact 2 from document>",
+    "<Key fact 3 from document>"
   ],
   "extracted_fields": {{
-    "Vendor": "DEMO - Sliced Invoices",
-    "Invoice Number": "INV-3337",
-    "Order Number": "12345",
-    "Invoice Date": "January 25, 2016",
-    "Due Date": "January 31, 2016",
-    "Subtotal": "$85.00",
-    "Tax": "$8.50",
-    "Total Amount": "$93.50",
-    "Currency": "USD",
-    "Service": "Web Design",
-    "Customer": "Test Business",
-    "Payment Terms": "Payment due within 30 days",
-    "Payment Status": "PAID"
+    "Vendor / Entity": "<Extracted Vendor or Sender Name>",
+    "Document ID / Number": "<Extracted Number>",
+    "Date": "<Extracted Date>",
+    "Total Amount": "<Extracted Amount with currency symbol or N/A>"
   }},
   "risks": [
-    {{"type": "CHECK", "text": "Invoice is marked PAID with verified watermark"}},
-    {{"type": "CHECK", "text": "All required tax, line item, and vendor fields present"}}
+    {{"type": "CHECK", "text": "<Safety or verification signal>"}}
   ],
-  "recommended_action": "ARCHIVE / RECORD KEEPING",
-  "department": "Finance",
-  "assigned_role": "Finance Records / Finance Manager",
-  "sla_hours": 48,
+  "recommended_action": "<RECOMMENDED NEXT ACTION>",
+  "department": "<Finance|Legal|HR|Operations>",
+  "assigned_role": "<Assigned Approver Role>",
+  "sla_hours": 24,
   "workflow": [
-    {{"step_name": "Document Upload", "node_type": "Start", "role": "System", "status": "Completed"}},
-    {{"step_name": "AI Analysis", "node_type": "AI Analysis", "role": "AI System", "status": "Completed"}},
-    {{"step_name": "Document Validation", "node_type": "Document Validation", "role": "System", "status": "Completed"}},
-    {{"step_name": "Payment Status Verification", "node_type": "AI Verification", "role": "Finance Automation", "status": "Completed"}},
-    {{"step_name": "Archive / Record Keeping", "node_type": "Approval", "role": "Finance Manager", "status": "Active"}},
-    {{"step_name": "Completed", "node_type": "End", "role": "Accounts Payable", "status": "Pending"}}
+    {{"step_name": "Document Ingestion", "node_type": "Start", "role": "System", "status": "Completed"}},
+    {{"step_name": "AI Analysis", "node_type": "AI Analysis", "role": "AI Engine", "status": "Completed"}},
+    {{"step_name": "Department Signoff", "node_type": "Approval", "role": "Department Manager", "status": "Active"}},
+    {{"step_name": "System Archival", "node_type": "End", "role": "System", "status": "Pending"}}
   ]
 }}
 
