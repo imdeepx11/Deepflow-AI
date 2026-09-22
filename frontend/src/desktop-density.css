@@ -10,11 +10,11 @@
   }
 
   .brand-name {
-    font-size: 26px;
+    font-size: 29px;
   }
 
   .brand-subtitle {
-    font-size: 8px;
+    font-size: 9px;
     letter-spacing: .13em;
   }
 
@@ -23,8 +23,8 @@
   }
 
   .nav-link {
-    padding: 8px 10px;
-    font-size: 11px;
+    padding: 9px 11px;
+    font-size: 13px;
   }
 
   .header-search {
@@ -48,12 +48,12 @@
   }
 
   .page-title {
-    font-size: clamp(30px, 3.5vw, 48px);
+    font-size: clamp(34px, 3.5vw, 50px);
   }
 
   .page-intro {
     margin-top: 8px;
-    font-size: 12px;
+    font-size: 14px;
     line-height: 1.6;
   }
 
@@ -71,9 +71,9 @@
   }
 
   .hero-text {
-    max-width: 500px;
+    max-width: 520px;
     margin: 14px 0 18px;
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1.55;
   }
 
@@ -93,7 +93,7 @@
 
   .kpi-value {
     margin-top: 5px;
-    font-size: 32px;
+    font-size: 35px;
   }
 
   .bento-grid {
@@ -109,7 +109,7 @@
   }
 
   .card-title {
-    font-size: 20px;
+    font-size: 22px;
   }
 
   .docs-card,
@@ -138,4 +138,26 @@
     right: auto !important;
     bottom: 12px !important;
   }
+}
+
+
+/* Larger desktop typography for comfortable 100% zoom reading */
+@media (min-width: 1100px) {
+  .ledger-hero-title { font-size: clamp(42px, 4vw, 58px) !important; }
+  .ledger-hero .page-intro { font-size: 15px !important; }
+  .page-kicker,
+  .stamp-label { font-size: 12px !important; }
+  .ledger-row { min-height: 76px; padding: 18px 30px; }
+  .ledger-row-label { font-size: 15px !important; }
+  .ledger-value { font-size: 31px !important; }
+  .ledger-delta { font-size: 12px !important; padding: 3px 9px; }
+  .ledger-panel { padding: 29px 30px; }
+  .card-title { font-size: 22px !important; }
+  .card-subtitle { font-size: 12px !important; }
+  .ledger-tally-row { font-size: 12px !important; }
+  .editorial-table { font-size: 12px !important; }
+  .editorial-table th { font-size: 10px !important; }
+  .editorial-table td { padding: 13px 9px; }
+  .doc-meta { font-size: 10px !important; }
+  .developer-credit { font-size: 11px !important; }
 }
