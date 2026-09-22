@@ -1,5 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import Sidebar from './components/Sidebar';
+import React, { useEffect, useState } from 'react';
+import './App.css';
+import './ledger-overrides.css';
+import './dark-mode.css';
+import './search-dark.css';
+import './desktop-density.css';
+import './workspace-sidebar.css';
+import './contact-modal-fix.css';
+import './login-premium.css';
 import Header from './components/Header';
 import UploadModal from './components/UploadModal';
 
@@ -12,121 +19,105 @@ import Analytics from './pages/Analytics';
 import AuditLogs from './pages/AuditLogs';
 import Settings from './pages/Settings';
 
+const PAGE_TITLES = {
+  dashboard: 'Overview',
+  documents: 'Documents',
+  analyzer: 'AI Document Analyzer',
+  workflows: 'Workflows',
+  analytics: 'Analytics',
+  audit: 'Audit Trail',
+  settings: 'Settings'
+};
+
+const SESSION_USER_KEY = 'deepflow_user_session';
+
 export default function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    try {
+      localStorage.removeItem('deepflow_user');
+      return JSON.parse(sessionStorage.getItem(SESSION_USER_KEY) || 'null');
+    } catch {
+      return null;
+    }
+  });
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedDocId, setSelectedDocId] = useState(null);
-  const [theme, setTheme] = useState(localStorage.getItem('deepflow_theme') || 'dark');
-
-  // Initialize user as null so visitors always land on the Login page first
-
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('deepflow_theme') === 'dark');
 
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-    localStorage.setItem('deepflow_theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
-  };
+    document.documentElement.classList.toggle('dark', darkMode);
+    document.body.classList.toggle('dark-mode', darkMode);
+    document.body.classList.add('deepflow-editorial');
+    localStorage.setItem('deepflow_theme', darkMode ? 'dark' : 'light');
+    return () => document.body.classList.remove('deepflow-editorial');
+  }, [darkMode]);
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
-    localStorage.setItem('deepflow_user', JSON.stringify(userData));
+    sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(userData));
   };
 
   const handleLogout = () => {
     setUser(null);
+    sessionStorage.removeItem(SESSION_USER_KEY);
     localStorage.removeItem('deepflow_user');
   };
 
-  const handleNavigateToAnalyzer = (docId) => {
-    if (docId) setSelectedDocId(docId);
+  const navigateToAnalyzer = (docId) => {
+    setSelectedDocId(docId);
     setCurrentPage('analyzer');
   };
 
-  const handleUploadSuccess = (newDocId) => {
-    setSelectedDocId(newDocId);
+  const handleUploadSuccess = (docId) => {
+    setSelectedDocId(docId);
     setCurrentPage('analyzer');
   };
 
-  if (!user) {
-    return <Login onLoginSuccess={handleLoginSuccess} />;
-  }
-
-  const pageTitles = {
-    dashboard: 'Enterprise Dashboard',
-    documents: 'Document Library',
-    analyzer: 'AI Document Analyzer',
-    workflows: 'Workflow Automation & Rules',
-    analytics: 'Analytics & Process Intelligence',
-    audit: 'Audit & Compliance Logs',
-    settings: 'Settings & AI Configurations'
-  };
+  if (!user) return <Login onLoginSuccess={handleLoginSuccess} darkMode={darkMode} onToggleDarkMode={() => setDarkMode(v => !v)} />;
 
   return (
-    <div className="flex min-h-screen bg-[#F8FAFC] dark:bg-[#050505] text-[#0F172A] dark:text-[#F5F5F5] transition-colors">
-      {/* Persistent Enterprise Sidebar */}
-      <Sidebar
+    <div className="editorial-app">
+      <Header
+        pageTitle={PAGE_TITLES[currentPage] || 'DeepFlow AI'}
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
+        onOpenUpload={() => setUploadModalOpen(true)}
         user={user}
+        onNavigateToAnalyzer={navigateToAnalyzer}
         onLogout={handleLogout}
+        darkMode={darkMode}
+        onToggleDarkMode={() => setDarkMode(v => !v)}
       />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <Header
-          pageTitle={pageTitles[currentPage] || 'Dashboard'}
-          onOpenUpload={() => setUploadModalOpen(true)}
-          user={user}
-          theme={theme}
-          onToggleTheme={toggleTheme}
-          onNavigateToAnalyzer={handleNavigateToAnalyzer}
-        />
+      <main className="editorial-main">
+        {currentPage === 'dashboard' && (
+          <Dashboard
+            user={user}
+            onNavigateToAnalyzer={navigateToAnalyzer}
+            onNavigateToDocuments={() => setCurrentPage('documents')}
+            onOpenUpload={() => setUploadModalOpen(true)}
+          />
+        )}
+        {currentPage === 'documents' && (
+          <Documents
+            user={user}
+            onNavigateToAnalyzer={navigateToAnalyzer}
+            onOpenUpload={() => setUploadModalOpen(true)}
+          />
+        )}
+        {currentPage === 'analyzer' && (
+          <DocumentAnalyzer
+            docId={selectedDocId}
+            onNavigateToDocuments={() => setCurrentPage('documents')}
+          />
+        )}
+        {currentPage === 'workflows' && <Workflows />}
+        {currentPage === 'analytics' && <Analytics />}
+        {currentPage === 'audit' && <AuditLogs />}
+        {currentPage === 'settings' && <Settings user={user} />}
+      </main>
 
-        <main className="flex-1 overflow-y-auto">
-          {currentPage === 'dashboard' && (
-            <Dashboard
-              user={user}
-              onNavigateToAnalyzer={handleNavigateToAnalyzer}
-              onNavigateToDocuments={() => setCurrentPage('documents')}
-              onOpenUpload={() => setUploadModalOpen(true)}
-            />
-          )}
-
-          {currentPage === 'documents' && (
-            <Documents
-              user={user}
-              onNavigateToAnalyzer={handleNavigateToAnalyzer}
-              onOpenUpload={() => setUploadModalOpen(true)}
-            />
-          )}
-
-          {currentPage === 'analyzer' && (
-            <DocumentAnalyzer
-              docId={selectedDocId}
-              user={user}
-            />
-          )}
-
-          {currentPage === 'workflows' && <Workflows />}
-
-          {currentPage === 'analytics' && <Analytics />}
-
-          {currentPage === 'audit' && <AuditLogs />}
-
-          {currentPage === 'settings' && <Settings />}
-        </main>
-      </div>
-
-      {/* Global Upload Modal */}
       <UploadModal
         isOpen={uploadModalOpen}
         onClose={() => setUploadModalOpen(false)}

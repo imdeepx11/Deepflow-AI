@@ -1,208 +1,154 @@
 import React, { useState } from 'react';
-import { Sparkles, ArrowRight, Lock, Mail, CheckCircle2, Cpu, Eye, EyeOff } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Lock, Mail, Moon, Sparkles, Sun } from 'lucide-react';
 import { api } from '../api';
+import { isGoogleAuthConfigured, signInWithGoogle } from '../firebase-client';
 
-export default function Login({ onLoginSuccess }) {
-  const [email, setEmail] = useState('demo@deepflow.ai');
-  const [password, setPassword] = useState('demo123');
-  const [showPassword, setShowPassword] = useState(false);
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+function GoogleMark() {
+  return (
+    <svg className="google-mark" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="#4285F4" d="M21.35 12.27c0-.67-.06-1.3-.18-1.91H12v3.61h5.24a4.47 4.47 0 0 1-1.94 2.94v2.44h3.14c1.84-1.69 2.91-4.19 2.91-7.08Z" />
+      <path fill="#34A853" d="M12 21.6c2.63 0 4.84-.87 6.45-2.35l-3.14-2.44c-.87.58-1.98.93-3.31.93-2.55 0-4.71-1.72-5.49-4.03H3.27v2.52A9.73 9.73 0 0 0 12 21.6Z" />
+      <path fill="#FBBC05" d="M6.51 13.71A5.85 5.85 0 0 1 6.2 12c0-.59.11-1.16.31-1.71V7.77H3.27A9.6 9.6 0 0 0 2.4 12c0 1.53.37 2.98.87 4.23l3.24-2.52Z" />
+      <path fill="#EA4335" d="M12 6.26c1.43 0 2.71.49 3.72 1.45l2.79-2.79C16.83 3.39 14.62 2.4 12 2.4a9.73 9.73 0 0 0-8.73 5.37l3.24 2.52C7.29 7.98 9.45 6.26 12 6.26Z" />
+    </svg>
+  );
+}
+
+export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const isValidEmail = (emailStr) => {
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    return emailRegex.test(emailStr);
-  };
+  const submit = async (event) => {
+    event.preventDefault();
+    setError('');
+    const normalizedEmail = email.trim().toLowerCase();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError(null);
-
-    const cleanEmail = email.trim();
-
-    if (!cleanEmail) {
-      setError('Please enter your email address.');
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
+      setError('Please enter a valid email address, for example name@example.com.');
       return;
     }
-
-    if (!isValidEmail(cleanEmail)) {
-      setError('Please enter a valid email address (e.g., name@gmail.com or name@company.com).');
+    if (password.length < 6) {
+      setError('Password must contain at least 6 characters.');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await api.login({ email: cleanEmail, password });
+      const res = await api.login({ email: normalizedEmail, password });
       onLoginSuccess(res.user);
     } catch (err) {
-      setError(err.message || 'Login failed');
+      setError(err.message || 'Sign in failed');
+    } finally {
       setLoading(false);
     }
   };
 
-  const handleUseDemo = async () => {
+  const googleLogin = async () => {
+    setError('');
+    if (!isGoogleAuthConfigured()) {
+      setError('Google sign-in is not connected yet. Firebase web app settings are required in Vercel.');
+      return;
+    }
+
+    setGoogleLoading(true);
+    try {
+      const result = await signInWithGoogle();
+      const res = await api.loginWithGoogle(result.idToken);
+      onLoginSuccess(res.user);
+    } catch (err) {
+      setError(err.message || 'Google sign-in failed');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const demo = async () => {
     setEmail('demo@deepflow.ai');
     setPassword('demo123');
+    setError('');
     setLoading(true);
-    setError(null);
     try {
       const res = await api.login({ email: 'demo@deepflow.ai', password: 'demo123' });
       onLoginSuccess(res.user);
     } catch (err) {
-      setError(err.message || 'Demo login failed');
+      setError(err.message || 'Demo sign in failed');
+    } finally {
       setLoading(false);
     }
   };
 
+  const busy = loading || googleLoading;
+
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#050505] flex items-center justify-center p-6 relative overflow-hidden transition-colors">
-      {/* Background Decorative Ambient Glow */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#00A859]/5 dark:bg-[#00A859]/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#00A859]/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="login-page">
+      <div className="login-shell premium-login-shell">
+        <section className="login-editorial">
+          <div className="login-topline">
+            <button className="brand-block login-brand" type="button" aria-label="DeepFlow AI">
+              <span className="brand-mark"><Sparkles size={18} /></span>
+              <span className="brand-copy">
+                <span className="brand-name">DeepFlow</span>
+                <span className="brand-subtitle">Intelligent Documents,<br />Smarter Workflows</span>
+              </span>
+            </button>
+            <button className="header-icon-btn login-theme-button" type="button" onClick={onToggleDarkMode} aria-label="Toggle dark mode" title="Toggle dark mode">
+              {darkMode ? <Sun size={15} /> : <Moon size={15} />}
+            </button>
+          </div>
 
-      <div className="w-full max-w-5xl bg-white dark:bg-[#0D0D0D] border border-[#E2E8F0] dark:border-[#242424] rounded-2xl overflow-hidden shadow-xl grid md:grid-cols-2 relative z-10">
-        
-        {/* Left Side - Enterprise Branding */}
-        <div className="p-10 bg-gradient-to-br from-[#F8FAFC] via-[#F1F5F9] to-[#DCFCE7]/30 dark:from-[#0D0D0D] dark:via-[#121212] dark:to-[#00A859]/10 border-r border-[#E2E8F0] dark:border-[#242424] flex flex-col justify-between relative">
-          <div>
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-12 h-12 rounded-xl bg-[#00A859] flex items-center justify-center text-white shadow-md">
-                <Sparkles className="w-6 h-6 fill-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-extrabold text-[#0F172A] dark:text-[#F5F5F5] tracking-tight">
-                  DeepFlow <span className="text-[#00A859]">AI</span>
-                </h1>
-                <p className="text-xs text-[#64748B] dark:text-[#A1A1AA] uppercase tracking-wider font-semibold">Enterprise Automation</p>
-              </div>
-            </div>
-
-            <div className="space-y-4 my-8">
-              <h2 className="text-3xl font-extrabold text-[#0F172A] dark:text-white leading-tight">
-                Intelligent Documents. <br />
-                <span className="text-[#00A859]">Smarter Workflows.</span>
-              </h2>
-              <p className="text-sm text-[#475569] dark:text-[#A1A1AA] font-medium leading-relaxed">
-                AI-powered document intelligence and workflow automation for modern enterprises.
-              </p>
-            </div>
-
-            <div className="space-y-3.5 pt-4">
-              <div className="flex items-center gap-3 text-xs font-semibold text-[#334155] dark:text-[#E2E8F0]">
-                <div className="w-5 h-5 rounded-full bg-[#DCFCE7] dark:bg-[#00A859]/20 flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#15803D] dark:text-[#4ADE80]" />
-                </div>
-                <span>Automated PDF, DOCX, and TXT Extraction</span>
-              </div>
-              <div className="flex items-center gap-3 text-xs font-semibold text-[#334155] dark:text-[#E2E8F0]">
-                <div className="w-5 h-5 rounded-full bg-[#DCFCE7] dark:bg-[#00A859]/20 flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#15803D] dark:text-[#4ADE80]" />
-                </div>
-                <span>AI Risk Assessment & SLA Priority Scoring</span>
-              </div>
-              <div className="flex items-center gap-3 text-xs font-semibold text-[#334155] dark:text-[#E2E8F0]">
-                <div className="w-5 h-5 rounded-full bg-[#DCFCE7] dark:bg-[#00A859]/20 flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#15803D] dark:text-[#4ADE80]" />
-                </div>
-                <span>Rule-Based Workflow Signoff & Audit Trail</span>
-              </div>
+          <div className="login-editorial-copy">
+            <div className="page-kicker">Document intelligence</div>
+            <h1>Turn<br />documents<br /><em>into decisions.</em></h1>
+            <p>Read business documents with AI, surface risk, and move every approval through a workflow that feels deliberate rather than mechanical.</p>
+            <div className="login-points">
+              {['PDF, DOCX and TXT extraction', 'Risk scoring and approval routing', 'Firestore-backed audit history'].map((item) => (
+                <div key={item}><CheckCircle2 size={15} /><span>{item}</span></div>
+              ))}
             </div>
           </div>
 
-          <div className="pt-8 border-t border-[#E2E8F0] dark:border-[#242424] text-[11px] text-[#64748B] dark:text-[#A1A1AA] font-medium">
-            DeepFlow AI • Fast, Secure & Multi-Modal Document Extraction
-          </div>
-        </div>
+          <div className="login-credit">DeepFlow AI Enterprise Platform</div>
+        </section>
 
-        {/* Right Side - Login Form Card */}
-        <div className="p-10 flex flex-col justify-center bg-white dark:bg-[#0D0D0D]">
-          <div className="mb-6">
-            <h3 className="text-xl font-extrabold text-[#0F172A] dark:text-[#F5F5F5]">Sign In to Dashboard</h3>
-            <p className="text-xs text-[#64748B] dark:text-[#A1A1AA] mt-1 font-medium">Enter your enterprise credentials or use the demo account</p>
-          </div>
+        <section className="login-side premium-login-side">
+          <div className="login-form-shell">
+            <div className="page-kicker">Welcome back</div>
+            <h2>Sign in.</h2>
+            <p>Use your work email or continue securely with Google.</p>
 
-          {error && (
-            <div className="mb-4 p-3 bg-[#FEF2F2] dark:bg-[#EF4444]/10 border border-[#FCA5A5] dark:border-[#EF4444]/30 rounded-xl text-xs text-[#DC2626] font-medium">
-              {error}
-            </div>
-          )}
+            {error && <div className="login-error" role="alert">{error}</div>}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-[#334155] dark:text-[#A1A1AA] mb-1.5">Email Address</label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-[#94A3B8] absolute left-3.5 top-3" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="demo@deepflow.ai"
-                  className="w-full bg-[#F8FAFC] dark:bg-[#1A1A1A] border border-[#CBD5E1] dark:border-[#2A2A2A] text-[#0F172A] dark:text-[#F5F5F5] placeholder:text-[#94A3B8] text-xs rounded-lg pl-10 pr-3.5 py-2.5 focus:bg-white dark:focus:bg-[#141414] focus:border-[#00A859] outline-none transition-all"
-                />
-              </div>
-            </div>
+            <button className="google-login" type="button" onClick={googleLogin} disabled={busy}>
+              <GoogleMark />
+              <span>{googleLoading ? 'Connecting to Google…' : 'Continue with Google'}</span>
+            </button>
 
-            <div>
-              <label className="block text-xs font-semibold text-[#334155] dark:text-[#A1A1AA] mb-1.5">Password</label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-[#94A3B8] absolute left-3.5 top-3" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full bg-[#F8FAFC] dark:bg-[#1A1A1A] border border-[#CBD5E1] dark:border-[#2A2A2A] text-[#0F172A] dark:text-[#F5F5F5] placeholder:text-[#94A3B8] text-xs rounded-lg pl-10 pr-10 py-2.5 focus:bg-white dark:focus:bg-[#141414] focus:border-[#00A859] outline-none transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-3 text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
+            <div className="login-divider"><span>or continue with email</span></div>
 
-            <div className="flex items-center justify-between text-xs py-1">
-              <label className="flex items-center gap-2 text-[#64748B] dark:text-[#A1A1AA] cursor-pointer font-medium">
-                <input type="checkbox" defaultChecked className="rounded border-[#CBD5E1] text-[#00A859] focus:ring-0" />
-                <span>Keep me signed in</span>
+            <form className="login-form" onSubmit={submit} noValidate>
+              <label>
+                <span className="login-label">Email address</span>
+                <div className="login-field"><Mail size={15} /><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" autoComplete="email" required /></div>
               </label>
-              <button
-                type="button"
-                onClick={() => alert("For demo access, click 'Use Demo Account' or use password 'demo123'.")}
-                className="text-[#00A859] font-semibold hover:underline bg-transparent p-0 cursor-pointer"
-              >
-                Forgot password?
+              <label>
+                <span className="login-label">Password</span>
+                <div className="login-field"><Lock size={15} /><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" autoComplete="current-password" minLength={6} required /></div>
+              </label>
+              <button className="primary-btn login-submit" type="submit" disabled={busy}>
+                <span>{loading ? 'Signing in…' : 'Sign in'}</span><ArrowRight size={14} />
               </button>
-            </div>
+            </form>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-[#00A859] hover:bg-[#059669] text-white font-bold text-xs py-3 rounded-xl transition-all duration-200 shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-            >
-              <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </form>
-
-          {/* Quick Demo Sign In Button */}
-          <div className="mt-6 pt-6 border-t border-[#E2E8F0] dark:border-[#242424] text-center">
-            <p className="text-xs text-[#64748B] dark:text-[#A1A1AA] font-medium mb-3">Instant Demo Access</p>
-            <button
-              type="button"
-              onClick={handleUseDemo}
-              className="w-full bg-[#DCFCE7] dark:bg-[#00A859]/20 hover:bg-[#BBF7D0] dark:hover:bg-[#00A859]/30 border border-[#86EFAC] dark:border-[#00A859]/40 text-[#15803D] dark:text-[#4ADE80] font-bold text-xs py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
-            >
-              <Cpu className="w-4 h-4 text-[#15803D] dark:text-[#4ADE80]" />
-              <span>Use Demo Account (demo@deepflow.ai)</span>
+            <button className="demo-link" type="button" onClick={demo} disabled={busy}>
+              <Sparkles size={13} /> Use demo account
             </button>
           </div>
-        </div>
-
+        </section>
       </div>
     </div>
   );
