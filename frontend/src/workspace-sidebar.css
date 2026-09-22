@@ -278,3 +278,21 @@
     padding-top: 25px;
   }
 }
+
+
+/* Accessibility/readability pass — enlarge small type while keeping the sidebar compact */
+@media (min-width: 1100px) {
+  .workspace-sidebar { width: 218px; padding: 22px 12px 14px; }
+  .sidebar-brand { padding-bottom: 18px; }
+  .sidebar-nav { gap: 1px; }
+  .sidebar-nav-link {
+    min-height: 42px;
+    padding: 0 10px;
+    gap: 9px;
+    font-size: 18px !important;
+  }
+  .sidebar-section-label { padding-bottom: 6px; font-size: 13px !important; }
+  .sidebar-credit { font-size: 11px !important; }
+  .editorial-header-inner { min-height: 72px; gap: 11px; }
+  .editorial-main { margin-left: 232px; margin-right: 13px; width: calc(100% - 245px); }
+}
