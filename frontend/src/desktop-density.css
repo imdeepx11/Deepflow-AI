@@ -161,3 +161,40 @@
   .doc-meta { font-size: 10px !important; }
   .developer-credit { font-size: 11px !important; }
 }
+
+
+/* Readability mode: make the primary desktop UI comfortably readable at 100% zoom */
+@media (min-width: 1100px) {
+  .nav-link { font-size: 16px !important; }
+  .header-search input { font-size: 14px !important; }
+  .contact-btn { font-size: 14px !important; }
+  .user-copy strong { font-size: 13px !important; }
+  .user-copy span { font-size: 11px !important; }
+
+  .page-kicker,
+  .stamp-label { font-size: 14px !important; }
+  .ledger-hero-title { font-size: clamp(48px, 4.5vw, 66px) !important; }
+  .ledger-hero .page-intro { font-size: 17px !important; }
+
+  .ledger-row { min-height: 86px; }
+  .ledger-row-label { font-size: 18px !important; }
+  .ledger-value { font-size: 38px !important; }
+  .ledger-delta { font-size: 14px !important; padding: 4px 10px; }
+
+  .card-title { font-size: 28px !important; }
+  .card-subtitle { font-size: 15px !important; }
+  .ledger-tally-row { font-size: 15px !important; }
+
+  .editorial-table { font-size: 15px !important; }
+  .editorial-table th { font-size: 12px !important; }
+  .editorial-table td { padding: 16px 10px !important; }
+  .doc-meta { font-size: 12px !important; }
+  .pill { font-size: 11px !important; }
+
+  .insight-item strong { font-size: 15px !important; }
+  .insight-item p { font-size: 14px !important; }
+  .developer-credit { font-size: 12px !important; }
+
+  .topbar-current { font-size: 24px !important; }
+  .topbar-kicker { font-size: 10px !important; }
+}
