@@ -323,3 +323,50 @@ body.dark-mode .login-editorial { background: #1b1e23 !important; border-right-c
   .login-editorial h1 { font-size: clamp(52px, 16vw, 76px); }
   .developer-credit { right: 8px; bottom: 8px; font-size: 8px; }
 }
+
+
+/* Readability refinement — slightly larger type without changing layout */
+body {
+  font-size: 15px;
+}
+
+.nav-link { font-size: 14px; }
+.header-search input { font-size: 12px; }
+.contact-btn { font-size: 12px; }
+.user-copy strong { font-size: 11px; }
+.user-copy span { font-size: 10px; }
+
+.page-kicker,
+.stamp-label,
+.login-label { font-size: 11px; }
+
+.page-intro { font-size: 14px; }
+.ledger-row-label { font-size: 14px; }
+.ledger-delta { font-size: 11px; }
+.card-subtitle { font-size: 11px; }
+.ledger-tally-row { font-size: 11px; }
+
+.editorial-table { font-size: 11px; }
+.editorial-table th { font-size: 9px; }
+.doc-meta { font-size: 10px; }
+.pill { font-size: 9px; }
+
+.insight-item strong { font-size: 12px; }
+.insight-item p { font-size: 11px; line-height: 1.6; }
+.ledger-quote > span { font-size: 11px; }
+
+.developer-credit { font-size: 10px; }
+
+.login-side > p { font-size: 13px; }
+.login-field input { font-size: 13px; }
+
+/* Keep compact controls compact where space is limited */
+.tab-btn { font-size: 10px; }
+
+@media (max-width: 640px) {
+  .page-intro { font-size: 13px; }
+  .ledger-row-label { font-size: 13px; }
+  .ledger-delta { font-size: 10px; }
+  .editorial-table { font-size: 10px; }
+  .login-field input { font-size: 12px; }
+}
