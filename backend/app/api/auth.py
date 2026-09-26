@@ -165,54 +165,43 @@ def register(req: RegisterRequest, request: Request, db: Session = Depends(get_d
     }
 
 def send_real_email_code(recipient_email: str, code: str) -> bool:
-    # 1. Try SMTP if configured (matching SMTP_HOST, SMTP_USER, SMTP_PASSWORD, SMTP_PORT, SMTP_USE_TLS)
-    smtp_server = os.environ.get("SMTP_HOST") or os.environ.get("SMTP_SERVER")
-    smtp_user = os.environ.get("SMTP_USER") or os.environ.get("SMTP_USERNAME")
-    smtp_pass = os.environ.get("SMTP_PASSWORD")
-    smtp_port_raw = os.environ.get("SMTP_PORT", "587")
-    smtp_port = int(smtp_port_raw) if str(smtp_port_raw).isdigit() else 587
-    use_tls = os.environ.get("SMTP_USE_TLS", "true").lower() in ["true", "1", "yes"]
-    sender_email = os.environ.get("SENDER_EMAIL", smtp_user or "noreply@deepflow.ai")
-
-    if smtp_server and smtp_user and smtp_pass:
+    # 0. Try HTTP Email APIs if keys exist (Resend, Brevo, SendGrid, Bird)
+    resend_api_key = os.environ.get("RESEND_API_KEY")
+    if resend_api_key:
         try:
-            import smtplib
-            from email.mime.text import MIMEText
-            from email.mime.multipart import MIMEMultipart
-
-            msg = MIMEMultipart("alternative")
-            msg["Subject"] = f"Your DeepFlow AI Password Verification Code: {code}"
-            msg["From"] = f"DeepFlow AI <{sender_email}>"
-            msg["To"] = recipient_email
-
-            html_content = f"""
-            <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px;">
-                <h2 style="color: #1f4333;">DeepFlow AI Password Recovery</h2>
-                <p>You requested to reset your password. Use the verification code below to complete your reset:</p>
-                <div style="font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #8e6b32; background: #fdfaf4; padding: 14px; text-align: center; border-radius: 8px; margin: 20px 0;">
-                    {code}
+            import requests
+            headers = {
+                "Authorization": f"Bearer {resend_api_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "from": os.environ.get("SENDER_EMAIL", "DeepFlow AI <onboarding@resend.dev>"),
+                "to": [recipient_email],
+                "subject": f"Your DeepFlow AI Verification Code: {code}",
+                "html": f"""
+                <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px;">
+                    <h2 style="color: #1f4333;">DeepFlow AI Password Recovery</h2>
+                    <p>You requested to reset your password. Use the verification code below to complete your reset:</p>
+                    <div style="font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #8e6b32; background: #fdfaf4; padding: 14px; text-align: center; border-radius: 8px; margin: 20px 0;">
+                        {code}
+                    </div>
+                    <p style="font-size: 12px; color: #666;">This code is valid for 15 minutes. If you did not request this code, please ignore this email.</p>
                 </div>
-                <p style="font-size: 12px; color: #666;">This code is valid for 15 minutes. If you did not request this code, please ignore this email.</p>
-            </div>
-            """
-            msg.attach(MIMEText(html_content, "html"))
-
-            if smtp_port == 465 or not use_tls:
-                with smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=5) as server:
-                    server.login(smtp_user, smtp_pass)
-                    server.sendmail(sender_email, [recipient_email], msg.as_string())
+                """
+            }
+            res = requests.post("https://api.resend.com/emails", json=payload, headers=headers, timeout=10)
+            if res.status_code in [200, 201, 202]:
+                print(f"[RESEND EMAIL SUCCESS] Verification code sent to {recipient_email}")
+                return True
             else:
-                with smtplib.SMTP(smtp_server, smtp_port, timeout=5) as server:
-                    server.starttls()
-                    server.login(smtp_user, smtp_pass)
-                    server.sendmail(sender_email, [recipient_email], msg.as_string())
-            print(f"[SMTP SUCCESS] Verification code email sent successfully to {recipient_email}")
-            return True
+                print(f"[RESEND EMAIL NOTICE] {res.status_code}: {res.text}")
         except Exception as err:
-            print(f"[SMTP ERROR] Failed to send email via SMTP ({smtp_server}:{smtp_port}): {err}")
+            print(f"[RESEND EMAIL ERROR] {err}")
 
-    # 2. Try Bird API / MessageBird Email if configured
+    # 1. Try Bird API / MessageBird Email if configured
     bird_api_key = os.environ.get("BIRD_API_KEY") or os.environ.get("MESSAGEBIRD_API_KEY")
+    sender_email = os.environ.get("SENDER_EMAIL") or os.environ.get("SMTP_USER") or os.environ.get("SMTP_USERNAME") or "noreply@deepflow.ai"
+
     if bird_api_key:
         try:
             import requests
@@ -230,13 +219,12 @@ def send_real_email_code(recipient_email: str, code: str) -> bool:
                 "subject": f"Your DeepFlow AI Verification Code: {code}",
                 "html": f"Your DeepFlow AI verification code is <b>{code}</b>."
             }
-            res = requests.post("https://rest.messagebird.com/email", json=payload, headers=headers_access, timeout=5)
+            res = requests.post("https://rest.messagebird.com/email", json=payload, headers=headers_access, timeout=10)
             if res.status_code in [200, 201, 202]:
                 print(f"[BIRD EMAIL SUCCESS] Email sent to {recipient_email}")
                 return True
             
-            # Retry with Bearer header if AccessKey failed
-            res2 = requests.post("https://api.bird.com/v1/emails", json=payload, headers=headers_bearer, timeout=5)
+            res2 = requests.post("https://api.bird.com/v1/emails", json=payload, headers=headers_bearer, timeout=10)
             if res2.status_code in [200, 201, 202]:
                 print(f"[BIRD EMAIL V2 SUCCESS] Email sent to {recipient_email}")
                 return True
@@ -245,7 +233,66 @@ def send_real_email_code(recipient_email: str, code: str) -> bool:
         except Exception as err:
             print(f"[BIRD EMAIL ERROR] {err}")
 
-    print(f"[EMAIL DEV MODE] Bird / SMTP credentials not active. Code for {recipient_email}: {code}")
+    # 2. Try SMTP if configured (matching SMTP_HOST, SMTP_USER, SMTP_PASSWORD, SMTP_PORT, SMTP_USE_TLS)
+    smtp_server = os.environ.get("SMTP_HOST") or os.environ.get("SMTP_SERVER")
+    smtp_user = os.environ.get("SMTP_USER") or os.environ.get("SMTP_USERNAME")
+    smtp_pass = os.environ.get("SMTP_PASSWORD")
+    smtp_port_raw = os.environ.get("SMTP_PORT", "587")
+    smtp_port = int(smtp_port_raw) if str(smtp_port_raw).isdigit() else 587
+
+    if smtp_server and smtp_user and smtp_pass:
+        try:
+            import smtplib
+            from email.mime.text import MIMEText
+            from email.mime.multipart import MIMEMultipart
+
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = f"Your DeepFlow AI Password Verification Code: {code}"
+            msg["From"] = smtp_user
+            msg["To"] = recipient_email
+
+            html_content = f"""
+            <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px;">
+                <h2 style="color: #1f4333;">DeepFlow AI Password Recovery</h2>
+                <p>You requested to reset your password. Use the verification code below to complete your reset:</p>
+                <div style="font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #8e6b32; background: #fdfaf4; padding: 14px; text-align: center; border-radius: 8px; margin: 20px 0;">
+                    {code}
+                </div>
+                <p style="font-size: 12px; color: #666;">This code is valid for 15 minutes. If you did not request this code, please ignore this email.</p>
+            </div>
+            """
+            msg.attach(MIMEText(html_content, "html"))
+
+            # Attempt STARTTLS on 587
+            try:
+                with smtplib.SMTP(smtp_server, smtp_port, timeout=10) as server:
+                    server.starttls()
+                    server.login(smtp_user, smtp_pass)
+                    server.sendmail(smtp_user, [recipient_email], msg.as_string())
+                print(f"[SMTP STARTTLS SUCCESS] Verification code email sent to {recipient_email}")
+                return True
+            except smtplib.SMTPAuthenticationError as auth_err:
+                print(f"[SMTP AUTH ERROR] Google/SMTP rejected login for {smtp_user}: {auth_err}. If using Gmail, a 16-character App Password (myaccount.google.com/apppasswords) is required instead of personal password.")
+            except Exception as tls_err:
+                print(f"[SMTP STARTTLS NOTICE] {tls_err}. Retrying with SSL on port 465...")
+
+            # Attempt SSL on 465 fallback
+            try:
+                ssl_port = 465 if smtp_port != 465 else smtp_port
+                with smtplib.SMTP_SSL(smtp_server, ssl_port, timeout=10) as server:
+                    server.login(smtp_user, smtp_pass)
+                    server.sendmail(smtp_user, [recipient_email], msg.as_string())
+                print(f"[SMTP SSL SUCCESS] Verification code email sent to {recipient_email}")
+                return True
+            except smtplib.SMTPAuthenticationError as auth_err:
+                print(f"[SMTP AUTH ERROR] Google/SMTP rejected login for {smtp_user}: {auth_err}. App Password required.")
+            except Exception as ssl_err:
+                print(f"[SMTP SSL ERROR] {ssl_err}")
+
+        except Exception as err:
+            print(f"[SMTP GENERAL ERROR] Failed to send email via SMTP ({smtp_server}:{smtp_port}): {err}")
+
+    print(f"[EMAIL DEV MODE] All email dispatchers completed. Code for {recipient_email}: {code}")
     return False
 
 def send_real_sms_code(phone: str, code: str) -> bool:
