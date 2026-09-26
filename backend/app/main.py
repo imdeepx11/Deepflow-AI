@@ -18,6 +18,13 @@ except Exception:
     pass
 
 try:
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE users ADD COLUMN phone VARCHAR"))
+        conn.commit()
+except Exception:
+    pass
+
+try:
     seed_db()
 except Exception as exc:
     print(f"Database seed note: {exc}")

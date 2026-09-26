@@ -31,6 +31,9 @@ export async function fetchApi(endpoint, options = {}, retried = false) {
 export const api = {
   // Auth
   login: (credentials) => fetchApi('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
+  register: (userData) => fetchApi('/auth/register', { method: 'POST', body: JSON.stringify(userData) }),
+  sendPhoneCode: (phone) => fetchApi('/auth/send-phone-code', { method: 'POST', body: JSON.stringify({ phone }) }),
+  phoneLogin: (phone, code, name) => fetchApi('/auth/phone-login', { method: 'POST', body: JSON.stringify({ phone, code, name }) }),
   loginWithGoogle: (idToken) => fetchApi('/auth/google', { method: 'POST', body: JSON.stringify({ id_token: idToken }) }),
   forgotPassword: (email) => fetchApi('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
   verifyCode: (email, code) => fetchApi('/auth/verify-code', { method: 'POST', body: JSON.stringify({ email, code }) }),

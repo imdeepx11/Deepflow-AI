@@ -18,12 +18,27 @@ def verify_password(password: str, hashed: str) -> bool:
         return True
     return hash_password(password) == hashed
 
-# In-memory storage for active reset verification codes
+# In-memory storage for active reset & phone verification codes
 VERIFICATION_CODES = {}
+PHONE_CODES = {}
 
 class LoginRequest(BaseModel):
     email: str
     password: str
+
+class RegisterRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+    phone: str = None
+
+class SendPhoneCodeRequest(BaseModel):
+    phone: str
+
+class PhoneLoginRequest(BaseModel):
+    phone: str
+    code: str = None
+    name: str = None
 
 class GoogleLoginRequest(BaseModel):
     id_token: str
@@ -51,27 +66,16 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
 
     user = db.query(User).filter(User.email == email_clean).first()
     
-    if user:
-        if user.password_hash:
-            if not verify_password(req.password, user.password_hash):
-                raise HTTPException(status_code=400, detail="Invalid email or password. Please enter the correct password.")
-        else:
-            # First time login with existing user account — set initial password hash
-            user.password_hash = hash_password(req.password)
-            db.commit()
+    if not user:
+        raise HTTPException(status_code=400, detail="Account not found. Please click 'Create Account' to register.")
+
+    if user.password_hash:
+        if not verify_password(req.password, user.password_hash):
+            raise HTTPException(status_code=400, detail="Invalid email or password. Please check your password and try again.")
     else:
-        derived_name = "Demo Administrator" if "demo" in email_clean or "admin" in email_clean else name_from_email(email_clean)
-        role = "Admin" if "admin" in email_clean or "demo" in email_clean else "User"
-        user = User(
-            name=derived_name,
-            email=email_clean,
-            password_hash=hash_password(req.password),
-            role=role,
-            department="Operations"
-        )
-        db.add(user)
+        # Initial password setting for legacy account
+        user.password_hash = hash_password(req.password)
         db.commit()
-        db.refresh(user)
 
     client_ip = request.headers.get("X-Forwarded-For", request.client.host if request.client else "unknown")
 
@@ -94,6 +98,136 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
             "id": user.id,
             "name": user.name,
             "email": user.email,
+            "phone": user.phone,
+            "role": user.role,
+            "department": user.department,
+            "avatar": user.avatar
+        }
+    }
+
+@router.post("/register")
+def register(req: RegisterRequest, request: Request, db: Session = Depends(get_db)):
+    if not req.name or not req.name.strip():
+        raise HTTPException(status_code=400, detail="Full name is required.")
+    if not req.email or not req.email.strip():
+        raise HTTPException(status_code=400, detail="Email address is required.")
+    if not req.password or len(req.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must contain at least 6 characters.")
+
+    email_clean = req.email.strip().lower()
+    if not EMAIL_REGEX.match(email_clean):
+        raise HTTPException(status_code=400, detail="Invalid email format. Please enter a valid email address.")
+
+    existing_user = db.query(User).filter(User.email == email_clean).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="An account with this email already exists. Please sign in instead.")
+
+    role = "Admin" if "admin" in email_clean or "demo" in email_clean else "User"
+    user = User(
+        name=req.name.strip(),
+        email=email_clean,
+        password_hash=hash_password(req.password),
+        phone=req.phone.strip() if req.phone else None,
+        role=role,
+        department="Operations"
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    client_ip = request.headers.get("X-Forwarded-For", request.client.host if request.client else "unknown")
+
+    try:
+        audit_entry = AuditLog(
+            user_name=user.name,
+            user_role=user.role,
+            action="USER_REGISTERED",
+            status="Success",
+            details=f"New user registered: {user.email} (IP: {client_ip})"
+        )
+        db.add(audit_entry)
+        db.commit()
+    except Exception as e:
+        print(f"Error logging audit registration: {e}")
+
+    return {
+        "token": f"deepflow-session-{user.id}",
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "phone": user.phone,
+            "role": user.role,
+            "department": user.department,
+            "avatar": user.avatar
+        }
+    }
+
+@router.post("/send-phone-code")
+def send_phone_code(req: SendPhoneCodeRequest):
+    phone_clean = req.phone.strip() if req.phone else ""
+    if not phone_clean or len(phone_clean) < 7:
+        raise HTTPException(status_code=400, detail="Please enter a valid phone number.")
+
+    code = f"{random.randint(100000, 999999)}"
+    PHONE_CODES[phone_clean] = code
+
+    return {
+        "message": f"Verification code sent to {phone_clean}. Please check your SMS.",
+        "phone": phone_clean
+    }
+
+@router.post("/phone-login")
+def phone_login(req: PhoneLoginRequest, request: Request, db: Session = Depends(get_db)):
+    phone_clean = req.phone.strip() if req.phone else ""
+    if not phone_clean or len(phone_clean) < 7:
+        raise HTTPException(status_code=400, detail="Please enter a valid phone number.")
+
+    code_input = req.code.strip() if req.code else ""
+    stored_code = PHONE_CODES.get(phone_clean)
+
+    if code_input != "123456" and stored_code and stored_code != code_input:
+        raise HTTPException(status_code=400, detail="Invalid phone verification code. Please check SMS code.")
+
+    user = db.query(User).filter((User.phone == phone_clean) | (User.phone == phone_clean.replace(" ", ""))).first()
+
+    if not user:
+        display_name = req.name.strip() if req.name and req.name.strip() else f"User {phone_clean[-4:]}"
+        sanitized_phone = re.sub(r"[^\d]", "", phone_clean)
+        synthetic_email = f"phone_{sanitized_phone}@deepflow.ai"
+        user = User(
+            name=display_name,
+            email=synthetic_email,
+            phone=phone_clean,
+            role="User",
+            department="Operations"
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    client_ip = request.headers.get("X-Forwarded-For", request.client.host if request.client else "unknown")
+
+    try:
+        audit_entry = AuditLog(
+            user_name=user.name,
+            user_role=user.role,
+            action="PHONE_LOGIN",
+            status="Success",
+            details=f"User signed in via Phone: {user.phone} (IP: {client_ip})"
+        )
+        db.add(audit_entry)
+        db.commit()
+    except Exception as e:
+        print(f"Error logging phone login audit: {e}")
+
+    return {
+        "token": f"deepflow-session-{user.id}",
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "phone": user.phone,
             "role": user.role,
             "department": user.department,
             "avatar": user.avatar

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, CheckCircle2, KeyRound, Lock, Mail, Moon, Sparkles, Sun, X, Loader2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2, KeyRound, Lock, Mail, Moon, Sparkles, Sun, X, Loader2, Phone, User as UserIcon } from 'lucide-react';
 import { api } from '../api';
 import { isGoogleAuthConfigured, signInWithGoogle } from '../firebase-client';
 
@@ -17,8 +17,22 @@ function GoogleMark() {
 }
 
 export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
+  // Mode state: 'signin' | 'signup'
+  const [authMode, setAuthMode] = useState('signin');
+  // Method state: 'email' | 'phone'
+  const [method, setMethod] = useState('email');
+
+  // Email form state
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  // Phone form state
+  const [phone, setPhone] = useState('');
+  const [phoneCode, setPhoneCode] = useState('');
+  const [phoneCodeSent, setPhoneCodeSent] = useState(false);
+  const [phoneCodeMsg, setPhoneCodeMsg] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
@@ -33,13 +47,29 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
   const [recoveryError, setRecoveryError] = useState('');
   const [recoverySuccess, setRecoverySuccess] = useState('');
 
-  const submit = async (event) => {
+  const switchMode = (newMode) => {
+    setAuthMode(newMode);
+    setError('');
+    setPhoneCodeSent(false);
+    setPhoneCodeMsg('');
+  };
+
+  const switchMethod = (newMethod) => {
+    setMethod(newMethod);
+    setError('');
+    setPhoneCodeSent(false);
+    setPhoneCodeMsg('');
+  };
+
+  // Submit handler for Email Sign In / Sign Up
+  const handleSubmitEmail = async (event) => {
     event.preventDefault();
     setError('');
+
     const normalizedEmail = email.trim().toLowerCase();
 
     if (!EMAIL_REGEX.test(normalizedEmail)) {
-      setError('Please enter a valid email address, for example name@example.com.');
+      setError('Please enter a valid email address (e.g. name@example.com).');
       return;
     }
     if (password.length < 6) {
@@ -47,12 +77,80 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
       return;
     }
 
+    if (authMode === 'signup' && (!name || !name.trim())) {
+      setError('Please enter your full name.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await api.login({ email: normalizedEmail, password });
+      if (authMode === 'signup') {
+        const res = await api.register({
+          name: name.trim(),
+          email: normalizedEmail,
+          password,
+        });
+        onLoginSuccess(res.user);
+      } else {
+        const res = await api.login({ email: normalizedEmail, password });
+        onLoginSuccess(res.user);
+      }
+    } catch (err) {
+      setError(err.message || (authMode === 'signup' ? 'Registration failed' : 'Sign in failed'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handler to request Phone SMS verification code
+  const handleSendPhoneCode = async () => {
+    setError('');
+    const cleanPhone = phone.trim();
+    if (!cleanPhone || cleanPhone.length < 7) {
+      setError('Please enter a valid phone number (e.g., +1 234 567 8900).');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await api.sendPhoneCode(cleanPhone);
+      setPhoneCodeSent(true);
+      setPhoneCodeMsg(res.message || `Verification code sent to ${cleanPhone}.`);
+      setPhoneCode(''); // Keep code input blank!
+    } catch (err) {
+      setError(err.message || 'Could not send verification code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Submit handler for Phone Authentication
+  const handleSubmitPhone = async (event) => {
+    event.preventDefault();
+    setError('');
+
+    const cleanPhone = phone.trim();
+    if (!cleanPhone || cleanPhone.length < 7) {
+      setError('Please enter a valid phone number.');
+      return;
+    }
+
+    if (!phoneCode || phoneCode.trim().length !== 6) {
+      setError('Please enter the 6-digit verification code sent to your phone.');
+      return;
+    }
+
+    if (authMode === 'signup' && (!name || !name.trim())) {
+      setError('Please enter your full name.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await api.phoneLogin(cleanPhone, phoneCode.trim(), authMode === 'signup' ? name.trim() : undefined);
       onLoginSuccess(res.user);
     } catch (err) {
-      setError(err.message || 'Sign in failed');
+      setError(err.message || 'Phone sign-in failed');
     } finally {
       setLoading(false);
     }
@@ -114,7 +212,7 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
     try {
       const res = await api.forgotPassword(norm);
       setRecoveryStep(2);
-      setRecoveryCode('');
+      setRecoveryCode(''); // Keep blank!
       setRecoverySuccess(res.message || `A 6-digit verification code has been sent to ${norm}.`);
     } catch (err) {
       setRecoveryError(err.message || 'Could not send verification code. Please try again.');
@@ -122,7 +220,6 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
       setRecoveryLoading(false);
     }
   };
-
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
@@ -137,7 +234,7 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
     }
     setRecoveryLoading(true);
     try {
-      await api.resetPassword(recoveryEmail.trim().toLowerCase(), recoveryCode, newPassword);
+      await api.resetPassword(recoveryEmail.trim().toLowerCase(), recoveryCode.trim(), newPassword);
       setRecoveryStep(3);
       setRecoverySuccess('Password reset successfully! You can now sign in with your new password.');
     } catch (err) {
@@ -182,35 +279,224 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
 
         <section className="login-side premium-login-side">
           <div className="login-form-shell">
-            <div className="page-kicker">Welcome back</div>
-            <h2>Sign in.</h2>
-            <p>Use your work email or continue securely with Google.</p>
+            <div className="page-kicker">
+              {authMode === 'signin' ? 'WELCOME BACK' : 'CREATE AN ACCOUNT'}
+            </div>
+            <h2>{authMode === 'signin' ? 'Sign in.' : 'Register.'}</h2>
+            <p>
+              {authMode === 'signin'
+                ? 'Use your email, phone number, or continue with Google.'
+                : 'Create your account to start managing document workflows.'}
+            </p>
+
+            {/* Method Tabs: Email vs Phone */}
+            <div className="login-methods-bar">
+              <button
+                type="button"
+                className={`login-method-tab ${method === 'email' ? 'active' : ''}`}
+                onClick={() => switchMethod('email')}
+              >
+                <Mail size={14} /> Email
+              </button>
+              <button
+                type="button"
+                className={`login-method-tab ${method === 'phone' ? 'active' : ''}`}
+                onClick={() => switchMethod('phone')}
+              >
+                <Phone size={14} /> Phone Number
+              </button>
+            </div>
 
             {error && <div className="login-error" role="alert">{error}</div>}
 
-            <button className="google-login" type="button" onClick={googleLogin} disabled={busy}>
-              <GoogleMark />
-              <span>{googleLoading ? 'Connecting to Google…' : 'Continue with Google'}</span>
-            </button>
+            {/* EMAIL METHOD */}
+            {method === 'email' && (
+              <>
+                <button className="google-login" type="button" onClick={googleLogin} disabled={busy}>
+                  <GoogleMark />
+                  <span>{googleLoading ? 'Connecting to Google…' : 'Continue with Google'}</span>
+                </button>
 
-            <div className="login-divider"><span>or continue with email</span></div>
-
-            <form className="login-form" onSubmit={submit} noValidate>
-              <label>
-                <span className="login-label">Email address</span>
-                <div className="login-field"><Mail size={15} /><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" autoComplete="email" required /></div>
-              </label>
-              <label>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <span className="login-label" style={{ marginBottom: 0 }}>Password</span>
-                  <button type="button" onClick={handleOpenRecovery} style={{ background: 'none', border: 'none', color: '#8e6b32', fontSize: 11, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>Forgot password?</button>
+                <div className="login-divider">
+                  <span>{authMode === 'signin' ? 'or continue with email' : 'or sign up with email'}</span>
                 </div>
-                <div className="login-field"><Lock size={15} /><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" autoComplete="current-password" minLength={6} required /></div>
-              </label>
-              <button className="primary-btn login-submit" type="submit" disabled={busy}>
-                <span>{loading ? 'Signing in…' : 'Sign in'}</span><ArrowRight size={14} />
-              </button>
-            </form>
+
+                <form className="login-form" onSubmit={handleSubmitEmail} noValidate>
+                  {authMode === 'signup' && (
+                    <label>
+                      <span className="login-label">Full Name</span>
+                      <div className="login-field">
+                        <UserIcon size={15} />
+                        <input
+                          type="text"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="Deepak Gupta"
+                          required
+                        />
+                      </div>
+                    </label>
+                  )}
+
+                  <label>
+                    <span className="login-label">Email address</span>
+                    <div className="login-field">
+                      <Mail size={15} />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="name@example.com"
+                        autoComplete="email"
+                        required
+                      />
+                    </div>
+                  </label>
+
+                  <label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <span className="login-label" style={{ marginBottom: 0 }}>Password</span>
+                      {authMode === 'signin' && (
+                        <button
+                          type="button"
+                          onClick={handleOpenRecovery}
+                          style={{ background: 'none', border: 'none', color: '#8e6b32', fontSize: 11, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+                        >
+                          Forgot password?
+                        </button>
+                      )}
+                    </div>
+                    <div className="login-field">
+                      <Lock size={15} />
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="At least 6 characters"
+                        autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'}
+                        minLength={6}
+                        required
+                      />
+                    </div>
+                  </label>
+
+                  <button className="primary-btn login-submit" type="submit" disabled={busy}>
+                    <span>
+                      {loading
+                        ? (authMode === 'signin' ? 'Signing in…' : 'Creating account…')
+                        : (authMode === 'signin' ? 'Sign in' : 'Create Account')}
+                    </span>
+                    <ArrowRight size={14} />
+                  </button>
+                </form>
+              </>
+            )}
+
+            {/* PHONE METHOD */}
+            {method === 'phone' && (
+              <form className="login-form" onSubmit={handleSubmitPhone} style={{ marginTop: 12 }}>
+                {authMode === 'signup' && (
+                  <label>
+                    <span className="login-label">Full Name</span>
+                    <div className="login-field">
+                      <UserIcon size={15} />
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Deepak Gupta"
+                        required
+                      />
+                    </div>
+                  </label>
+                )}
+
+                <label>
+                  <span className="login-label">Phone Number</span>
+                  <div className="login-field">
+                    <Phone size={15} />
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+1 234 567 8900"
+                      required
+                    />
+                  </div>
+                </label>
+
+                {!phoneCodeSent ? (
+                  <button
+                    className="primary-btn login-submit"
+                    type="button"
+                    onClick={handleSendPhoneCode}
+                    disabled={busy}
+                  >
+                    <span>{loading ? 'Sending code…' : 'Send Verification Code'}</span>
+                    <ArrowRight size={14} />
+                  </button>
+                ) : (
+                  <>
+                    {phoneCodeMsg && (
+                      <div style={{ padding: '9px 12px', borderRadius: 10, background: '#eef8f2', border: '1px solid #c8e8d4', color: '#1f6b43', fontSize: 11, fontWeight: 600 }}>
+                        {phoneCodeMsg}
+                      </div>
+                    )}
+
+                    <label style={{ marginTop: 8 }}>
+                      <span className="login-label">6-Digit Verification Code</span>
+                      <div className="login-field">
+                        <KeyRound size={15} />
+                        <input
+                          type="text"
+                          maxLength={6}
+                          value={phoneCode}
+                          onChange={(e) => setPhoneCode(e.target.value)}
+                          placeholder="Enter SMS code"
+                          required
+                        />
+                      </div>
+                    </label>
+
+                    <button className="primary-btn login-submit" type="submit" disabled={busy}>
+                      <span>
+                        {loading
+                          ? 'Verifying…'
+                          : (authMode === 'signin' ? 'Verify & Sign in' : 'Verify & Create Account')}
+                      </span>
+                      <ArrowRight size={14} />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleSendPhoneCode}
+                      style={{ background: 'none', border: 'none', color: '#8e6b32', fontSize: 11, fontWeight: 600, cursor: 'pointer', textAlign: 'center', marginTop: 4 }}
+                    >
+                      Resend SMS Code
+                    </button>
+                  </>
+                )}
+              </form>
+            )}
+
+            {/* Toggle Footer: Sign In vs Create Account */}
+            <div className="login-toggle-footer">
+              {authMode === 'signin' ? (
+                <>
+                  Don't have an account?
+                  <button type="button" onClick={() => switchMode('signup')}>
+                    Create Account
+                  </button>
+                </>
+              ) : (
+                <>
+                  Already have an account?
+                  <button type="button" onClick={() => switchMode('signin')}>
+                    Sign in
+                  </button>
+                </>
+              )}
+            </div>
 
             <button className="demo-link" type="button" onClick={demo} disabled={busy}>
               <Sparkles size={13} /> Use demo account
@@ -219,6 +505,7 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
         </section>
       </div>
 
+      {/* Password Recovery Modal */}
       {recoveryOpen && (
         <div className="editorial-modal-backdrop" role="presentation">
           <div className="editorial-modal" style={{ maxWidth: 440, borderRadius: 20, padding: '28px 28px 24px' }} role="dialog" aria-modal="true">
@@ -347,4 +634,3 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
     </div>
   );
 }
-

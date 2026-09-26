@@ -325,3 +325,72 @@ html.dark .login-error { background: #3d282c; border-color: #70474d; color: #e3a
   .premium-login-side { padding: 34px 22px 44px; }
   .login-form-shell h2 { font-size: 42px; }
 }
+
+/* Tab & Mode Switchers */
+.login-methods-bar {
+  display: flex;
+  background: rgba(0, 0, 0, 0.04);
+  padding: 4px;
+  border-radius: 12px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  gap: 4px;
+}
+
+.login-method-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.login-method-tab:hover {
+  color: var(--ink);
+}
+
+.login-method-tab.active {
+  background: rgba(255, 253, 248, 0.98);
+  color: var(--ink);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+body.dark-mode .login-methods-bar,
+html.dark .login-methods-bar {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+body.dark-mode .login-method-tab.active,
+html.dark .login-method-tab.active {
+  background: #242930;
+  color: #f3efe6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.login-toggle-footer {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.login-toggle-footer button {
+  background: none;
+  border: none;
+  color: #8e6b32;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 6px;
+  text-decoration: underline;
+  font-size: 12px;
+}
+
