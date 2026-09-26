@@ -165,80 +165,136 @@ def register(req: RegisterRequest, request: Request, db: Session = Depends(get_d
     }
 
 def send_real_email_code(recipient_email: str, code: str) -> bool:
+    # 1. Try Bird API / MessageBird Email if configured
+    bird_api_key = os.environ.get("BIRD_API_KEY") or os.environ.get("MESSAGEBIRD_API_KEY")
+    if bird_api_key:
+        try:
+            import requests
+            headers = {
+                "Authorization": f"AccessKey {bird_api_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "from": os.environ.get("BIRD_SENDER_EMAIL", os.environ.get("SENDER_EMAIL", "noreply@deepflow.ai")),
+                "to": [recipient_email],
+                "subject": f"Your DeepFlow AI Verification Code: {code}",
+                "html": f"""
+                <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px;">
+                    <h2 style="color: #1f4333;">DeepFlow AI Password Recovery</h2>
+                    <p>You requested to reset your password. Use the verification code below to complete your reset:</p>
+                    <div style="font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #8e6b32; background: #fdfaf4; padding: 14px; text-align: center; border-radius: 8px; margin: 20px 0;">
+                        {code}
+                    </div>
+                    <p style="font-size: 12px; color: #666;">This code is valid for 15 minutes. If you did not request this code, please ignore this email.</p>
+                </div>
+                """
+            }
+            res = requests.post("https://rest.messagebird.com/email", json=payload, headers=headers, timeout=10)
+            if res.status_code in [200, 201, 202]:
+                print(f"[BIRD EMAIL SUCCESS] Email sent to {recipient_email}")
+                return True
+            else:
+                print(f"[BIRD EMAIL NOTICE] Status {res.status_code}: {res.text}, trying SMTP fallback...")
+        except Exception as err:
+            print(f"[BIRD EMAIL ERROR] {err}")
+
+    # 2. Try SMTP if configured
     smtp_server = os.environ.get("SMTP_SERVER")
     smtp_port = int(os.environ.get("SMTP_PORT", "587"))
     smtp_user = os.environ.get("SMTP_USERNAME")
     smtp_pass = os.environ.get("SMTP_PASSWORD")
     sender_email = os.environ.get("SENDER_EMAIL", smtp_user or "noreply@deepflow.ai")
 
-    if not smtp_server or not smtp_user or not smtp_pass:
-        print(f"[EMAIL DEV MODE] SMTP credentials not set in environment. Generated verification code for {recipient_email}: {code}")
-        return False
+    if smtp_server and smtp_user and smtp_pass:
+        try:
+            import smtplib
+            from email.mime.text import MIMEText
+            from email.mime.multipart import MIMEMultipart
 
-    try:
-        import smtplib
-        from email.mime.text import MIMEText
-        from email.mime.multipart import MIMEMultipart
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = f"Your DeepFlow AI Password Verification Code: {code}"
+            msg["From"] = f"DeepFlow AI <{sender_email}>"
+            msg["To"] = recipient_email
 
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = f"Your DeepFlow AI Password Verification Code: {code}"
-        msg["From"] = f"DeepFlow AI <{sender_email}>"
-        msg["To"] = recipient_email
-
-        html_content = f"""
-        <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px;">
-            <h2 style="color: #1f4333;">DeepFlow AI Password Recovery</h2>
-            <p>You requested to reset your password. Use the verification code below to complete your reset:</p>
-            <div style="font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #8e6b32; background: #fdfaf4; padding: 14px; text-align: center; border-radius: 8px; margin: 20px 0;">
-                {code}
+            html_content = f"""
+            <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px;">
+                <h2 style="color: #1f4333;">DeepFlow AI Password Recovery</h2>
+                <p>You requested to reset your password. Use the verification code below to complete your reset:</p>
+                <div style="font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #8e6b32; background: #fdfaf4; padding: 14px; text-align: center; border-radius: 8px; margin: 20px 0;">
+                    {code}
+                </div>
+                <p style="font-size: 12px; color: #666;">This code is valid for 15 minutes. If you did not request this code, please ignore this email.</p>
             </div>
-            <p style="font-size: 12px; color: #666;">This code is valid for 15 minutes. If you did not request this code, please ignore this email.</p>
-        </div>
-        """
-        msg.attach(MIMEText(html_content, "html"))
+            """
+            msg.attach(MIMEText(html_content, "html"))
 
-        if smtp_port == 465:
-            with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
-                server.login(smtp_user, smtp_pass)
-                server.sendmail(sender_email, [recipient_email], msg.as_string())
-        else:
-            with smtplib.SMTP(smtp_server, smtp_port) as server:
-                server.starttls()
-                server.login(smtp_user, smtp_pass)
-                server.sendmail(sender_email, [recipient_email], msg.as_string())
-        print(f"[EMAIL SUCCESS] Verification code email sent successfully to {recipient_email}")
-        return True
-    except Exception as err:
-        print(f"[EMAIL ERROR] Failed to send email to {recipient_email}: {err}")
-        return False
+            if smtp_port == 465:
+                with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
+                    server.login(smtp_user, smtp_pass)
+                    server.sendmail(sender_email, [recipient_email], msg.as_string())
+            else:
+                with smtplib.SMTP(smtp_server, smtp_port) as server:
+                    server.starttls()
+                    server.login(smtp_user, smtp_pass)
+                    server.sendmail(sender_email, [recipient_email], msg.as_string())
+            print(f"[SMTP SUCCESS] Verification code email sent successfully to {recipient_email}")
+            return True
+        except Exception as err:
+            print(f"[SMTP ERROR] Failed to send email to {recipient_email}: {err}")
+            return False
+
+    print(f"[EMAIL DEV MODE] Bird / SMTP credentials not set in environment. Generated verification code for {recipient_email}: {code}")
+    return False
 
 def send_real_sms_code(phone: str, code: str) -> bool:
+    # 1. Try Bird API / MessageBird SMS if configured
+    bird_api_key = os.environ.get("BIRD_API_KEY") or os.environ.get("MESSAGEBIRD_API_KEY")
+    if bird_api_key:
+        try:
+            import requests
+            headers = {
+                "Authorization": f"AccessKey {bird_api_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "originator": os.environ.get("BIRD_ORIGINATOR", "DeepFlow"),
+                "recipients": [phone],
+                "body": f"Your DeepFlow AI verification code is: {code}"
+            }
+            res = requests.post("https://rest.messagebird.com/messages", json=payload, headers=headers, timeout=10)
+            if res.status_code in [200, 201]:
+                print(f"[BIRD SMS SUCCESS] SMS sent to {phone}")
+                return True
+            else:
+                print(f"[BIRD SMS ERROR] {res.status_code}: {res.text}")
+        except Exception as err:
+            print(f"[BIRD SMS ERROR] Failed to send SMS via Bird API: {err}")
+
+    # 2. Try Twilio SMS if configured
     twilio_sid = os.environ.get("TWILIO_ACCOUNT_SID")
     twilio_auth = os.environ.get("TWILIO_AUTH_TOKEN")
     twilio_phone = os.environ.get("TWILIO_PHONE_NUMBER")
 
-    if not twilio_sid or not twilio_auth or not twilio_phone:
-        print(f"[SMS DEV MODE] Twilio SMS credentials not set in environment. Generated OTP for {phone}: {code}")
-        return False
+    if twilio_sid and twilio_auth and twilio_phone:
+        try:
+            import requests
+            url = f"https://api.twilio.com/2010-04-01/Accounts/{twilio_sid}/Messages.json"
+            data = {
+                "From": twilio_phone,
+                "To": phone,
+                "Body": f"Your DeepFlow AI verification code is: {code}"
+            }
+            res = requests.post(url, data=data, auth=(twilio_sid, twilio_auth), timeout=10)
+            if res.status_code in [200, 201]:
+                print(f"[TWILIO SMS SUCCESS] Twilio SMS sent successfully to {phone}")
+                return True
+            else:
+                print(f"[TWILIO SMS ERROR] Twilio response {res.status_code}: {res.text}")
+        except Exception as err:
+            print(f"[TWILIO SMS ERROR] Failed to send SMS to {phone}: {err}")
 
-    try:
-        import requests
-        url = f"https://api.twilio.com/2010-04-01/Accounts/{twilio_sid}/Messages.json"
-        data = {
-            "From": twilio_phone,
-            "To": phone,
-            "Body": f"Your DeepFlow AI verification code is: {code}"
-        }
-        res = requests.post(url, data=data, auth=(twilio_sid, twilio_auth), timeout=10)
-        if res.status_code in [200, 201]:
-            print(f"[SMS SUCCESS] Twilio SMS sent successfully to {phone}")
-            return True
-        else:
-            print(f"[SMS ERROR] Twilio response {res.status_code}: {res.text}")
-            return False
-    except Exception as err:
-        print(f"[SMS ERROR] Failed to send SMS to {phone}: {err}")
-        return False
+    print(f"[SMS DEV MODE] Bird / Twilio credentials not set in environment. Generated OTP for {phone}: {code}")
+    return False
 
 @router.post("/send-phone-code")
 def send_phone_code(req: SendPhoneCodeRequest):
