@@ -165,44 +165,13 @@ def register(req: RegisterRequest, request: Request, db: Session = Depends(get_d
     }
 
 def send_real_email_code(recipient_email: str, code: str) -> bool:
-    # 1. Try Bird API / MessageBird Email if configured
-    bird_api_key = os.environ.get("BIRD_API_KEY") or os.environ.get("MESSAGEBIRD_API_KEY")
-    if bird_api_key:
-        try:
-            import requests
-            headers = {
-                "Authorization": f"AccessKey {bird_api_key}",
-                "Content-Type": "application/json"
-            }
-            payload = {
-                "from": os.environ.get("BIRD_SENDER_EMAIL", os.environ.get("SENDER_EMAIL", "noreply@deepflow.ai")),
-                "to": [recipient_email],
-                "subject": f"Your DeepFlow AI Verification Code: {code}",
-                "html": f"""
-                <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px;">
-                    <h2 style="color: #1f4333;">DeepFlow AI Password Recovery</h2>
-                    <p>You requested to reset your password. Use the verification code below to complete your reset:</p>
-                    <div style="font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #8e6b32; background: #fdfaf4; padding: 14px; text-align: center; border-radius: 8px; margin: 20px 0;">
-                        {code}
-                    </div>
-                    <p style="font-size: 12px; color: #666;">This code is valid for 15 minutes. If you did not request this code, please ignore this email.</p>
-                </div>
-                """
-            }
-            res = requests.post("https://rest.messagebird.com/email", json=payload, headers=headers, timeout=10)
-            if res.status_code in [200, 201, 202]:
-                print(f"[BIRD EMAIL SUCCESS] Email sent to {recipient_email}")
-                return True
-            else:
-                print(f"[BIRD EMAIL NOTICE] Status {res.status_code}: {res.text}, trying SMTP fallback...")
-        except Exception as err:
-            print(f"[BIRD EMAIL ERROR] {err}")
-
-    # 2. Try SMTP if configured
-    smtp_server = os.environ.get("SMTP_SERVER")
-    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
-    smtp_user = os.environ.get("SMTP_USERNAME")
+    # 1. Try SMTP if configured (matching SMTP_HOST, SMTP_USER, SMTP_PASSWORD, SMTP_PORT, SMTP_USE_TLS)
+    smtp_server = os.environ.get("SMTP_HOST") or os.environ.get("SMTP_SERVER")
+    smtp_user = os.environ.get("SMTP_USER") or os.environ.get("SMTP_USERNAME")
     smtp_pass = os.environ.get("SMTP_PASSWORD")
+    smtp_port_raw = os.environ.get("SMTP_PORT", "587")
+    smtp_port = int(smtp_port_raw) if str(smtp_port_raw).isdigit() else 587
+    use_tls = os.environ.get("SMTP_USE_TLS", "true").lower() in ["true", "1", "yes"]
     sender_email = os.environ.get("SENDER_EMAIL", smtp_user or "noreply@deepflow.ai")
 
     if smtp_server and smtp_user and smtp_pass:
@@ -228,7 +197,7 @@ def send_real_email_code(recipient_email: str, code: str) -> bool:
             """
             msg.attach(MIMEText(html_content, "html"))
 
-            if smtp_port == 465:
+            if smtp_port == 465 or not use_tls:
                 with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
                     server.login(smtp_user, smtp_pass)
                     server.sendmail(sender_email, [recipient_email], msg.as_string())
@@ -240,10 +209,43 @@ def send_real_email_code(recipient_email: str, code: str) -> bool:
             print(f"[SMTP SUCCESS] Verification code email sent successfully to {recipient_email}")
             return True
         except Exception as err:
-            print(f"[SMTP ERROR] Failed to send email to {recipient_email}: {err}")
-            return False
+            print(f"[SMTP ERROR] Failed to send email via SMTP ({smtp_server}): {err}")
 
-    print(f"[EMAIL DEV MODE] Bird / SMTP credentials not set in environment. Generated verification code for {recipient_email}: {code}")
+    # 2. Try Bird API / MessageBird Email if configured
+    bird_api_key = os.environ.get("BIRD_API_KEY") or os.environ.get("MESSAGEBIRD_API_KEY")
+    if bird_api_key:
+        try:
+            import requests
+            headers_access = {
+                "Authorization": f"AccessKey {bird_api_key}",
+                "Content-Type": "application/json"
+            }
+            headers_bearer = {
+                "Authorization": f"Bearer {bird_api_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "from": sender_email,
+                "to": [recipient_email],
+                "subject": f"Your DeepFlow AI Verification Code: {code}",
+                "html": f"Your DeepFlow AI verification code is <b>{code}</b>."
+            }
+            res = requests.post("https://rest.messagebird.com/email", json=payload, headers=headers_access, timeout=10)
+            if res.status_code in [200, 201, 202]:
+                print(f"[BIRD EMAIL SUCCESS] Email sent to {recipient_email}")
+                return True
+            
+            # Retry with Bearer header if AccessKey failed
+            res2 = requests.post("https://api.bird.com/v1/emails", json=payload, headers=headers_bearer, timeout=10)
+            if res2.status_code in [200, 201, 202]:
+                print(f"[BIRD EMAIL V2 SUCCESS] Email sent to {recipient_email}")
+                return True
+
+            print(f"[BIRD EMAIL NOTICE] Status {res.status_code}: {res.text}")
+        except Exception as err:
+            print(f"[BIRD EMAIL ERROR] {err}")
+
+    print(f"[EMAIL DEV MODE] Bird / SMTP credentials not active. Code for {recipient_email}: {code}")
     return False
 
 def send_real_sms_code(phone: str, code: str) -> bool:
@@ -252,7 +254,8 @@ def send_real_sms_code(phone: str, code: str) -> bool:
     if bird_api_key:
         try:
             import requests
-            headers = {
+            # Try MessageBird REST API
+            headers_access = {
                 "Authorization": f"AccessKey {bird_api_key}",
                 "Content-Type": "application/json"
             }
@@ -261,12 +264,22 @@ def send_real_sms_code(phone: str, code: str) -> bool:
                 "recipients": [phone],
                 "body": f"Your DeepFlow AI verification code is: {code}"
             }
-            res = requests.post("https://rest.messagebird.com/messages", json=payload, headers=headers, timeout=10)
+            res = requests.post("https://rest.messagebird.com/messages", json=payload, headers=headers_access, timeout=10)
             if res.status_code in [200, 201]:
                 print(f"[BIRD SMS SUCCESS] SMS sent to {phone}")
                 return True
-            else:
-                print(f"[BIRD SMS ERROR] {res.status_code}: {res.text}")
+
+            # Try Bird v2 API Bearer Auth
+            headers_bearer = {
+                "Authorization": f"Bearer {bird_api_key}",
+                "Content-Type": "application/json"
+            }
+            res2 = requests.post("https://api.bird.com/v2/messages", json=payload, headers=headers_bearer, timeout=10)
+            if res2.status_code in [200, 201]:
+                print(f"[BIRD V2 SMS SUCCESS] SMS sent to {phone}")
+                return True
+
+            print(f"[BIRD SMS ERROR] {res.status_code}: {res.text} / {res2.status_code}: {res2.text}")
         except Exception as err:
             print(f"[BIRD SMS ERROR] Failed to send SMS via Bird API: {err}")
 
