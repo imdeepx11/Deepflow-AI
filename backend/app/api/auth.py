@@ -1,3 +1,4 @@
+import os
 import hashlib
 import random
 from fastapi import APIRouter, HTTPException, Depends, Request
@@ -163,6 +164,82 @@ def register(req: RegisterRequest, request: Request, db: Session = Depends(get_d
         }
     }
 
+def send_real_email_code(recipient_email: str, code: str) -> bool:
+    smtp_server = os.environ.get("SMTP_SERVER")
+    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_user = os.environ.get("SMTP_USERNAME")
+    smtp_pass = os.environ.get("SMTP_PASSWORD")
+    sender_email = os.environ.get("SENDER_EMAIL", smtp_user or "noreply@deepflow.ai")
+
+    if not smtp_server or not smtp_user or not smtp_pass:
+        print(f"[EMAIL DEV MODE] SMTP credentials not set in environment. Generated verification code for {recipient_email}: {code}")
+        return False
+
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = f"Your DeepFlow AI Password Verification Code: {code}"
+        msg["From"] = f"DeepFlow AI <{sender_email}>"
+        msg["To"] = recipient_email
+
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px;">
+            <h2 style="color: #1f4333;">DeepFlow AI Password Recovery</h2>
+            <p>You requested to reset your password. Use the verification code below to complete your reset:</p>
+            <div style="font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #8e6b32; background: #fdfaf4; padding: 14px; text-align: center; border-radius: 8px; margin: 20px 0;">
+                {code}
+            </div>
+            <p style="font-size: 12px; color: #666;">This code is valid for 15 minutes. If you did not request this code, please ignore this email.</p>
+        </div>
+        """
+        msg.attach(MIMEText(html_content, "html"))
+
+        if smtp_port == 465:
+            with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
+                server.login(smtp_user, smtp_pass)
+                server.sendmail(sender_email, [recipient_email], msg.as_string())
+        else:
+            with smtplib.SMTP(smtp_server, smtp_port) as server:
+                server.starttls()
+                server.login(smtp_user, smtp_pass)
+                server.sendmail(sender_email, [recipient_email], msg.as_string())
+        print(f"[EMAIL SUCCESS] Verification code email sent successfully to {recipient_email}")
+        return True
+    except Exception as err:
+        print(f"[EMAIL ERROR] Failed to send email to {recipient_email}: {err}")
+        return False
+
+def send_real_sms_code(phone: str, code: str) -> bool:
+    twilio_sid = os.environ.get("TWILIO_ACCOUNT_SID")
+    twilio_auth = os.environ.get("TWILIO_AUTH_TOKEN")
+    twilio_phone = os.environ.get("TWILIO_PHONE_NUMBER")
+
+    if not twilio_sid or not twilio_auth or not twilio_phone:
+        print(f"[SMS DEV MODE] Twilio SMS credentials not set in environment. Generated OTP for {phone}: {code}")
+        return False
+
+    try:
+        import requests
+        url = f"https://api.twilio.com/2010-04-01/Accounts/{twilio_sid}/Messages.json"
+        data = {
+            "From": twilio_phone,
+            "To": phone,
+            "Body": f"Your DeepFlow AI verification code is: {code}"
+        }
+        res = requests.post(url, data=data, auth=(twilio_sid, twilio_auth), timeout=10)
+        if res.status_code in [200, 201]:
+            print(f"[SMS SUCCESS] Twilio SMS sent successfully to {phone}")
+            return True
+        else:
+            print(f"[SMS ERROR] Twilio response {res.status_code}: {res.text}")
+            return False
+    except Exception as err:
+        print(f"[SMS ERROR] Failed to send SMS to {phone}: {err}")
+        return False
+
 @router.post("/send-phone-code")
 def send_phone_code(req: SendPhoneCodeRequest):
     phone_clean = req.phone.strip() if req.phone else ""
@@ -172,10 +249,17 @@ def send_phone_code(req: SendPhoneCodeRequest):
     code = f"{random.randint(100000, 999999)}"
     PHONE_CODES[phone_clean] = code
 
-    return {
-        "message": f"Verification code sent to {phone_clean}. Please check your SMS.",
-        "phone": phone_clean
+    sent = send_real_sms_code(phone_clean, code)
+
+    res = {
+        "message": f"Verification code sent to {phone_clean}.",
+        "phone": phone_clean,
+        "sms_sent": sent
     }
+    if not sent:
+        res["dev_code"] = code
+        res["note"] = "SMS gateway credentials (TWILIO_ACCOUNT_SID) not set in environment variables."
+    return res
 
 @router.post("/phone-login")
 def phone_login(req: PhoneLoginRequest, request: Request, db: Session = Depends(get_db)):
@@ -186,8 +270,8 @@ def phone_login(req: PhoneLoginRequest, request: Request, db: Session = Depends(
     code_input = req.code.strip() if req.code else ""
     stored_code = PHONE_CODES.get(phone_clean)
 
-    if code_input != "123456" and stored_code and stored_code != code_input:
-        raise HTTPException(status_code=400, detail="Invalid phone verification code. Please check SMS code.")
+    if not stored_code or stored_code != code_input:
+        raise HTTPException(status_code=400, detail="Invalid verification code. Please enter the code sent to your phone.")
 
     user = db.query(User).filter((User.phone == phone_clean) | (User.phone == phone_clean.replace(" ", ""))).first()
 
@@ -332,10 +416,17 @@ def forgot_password(req: ForgotPasswordRequest, request: Request, db: Session = 
     code = f"{random.randint(100000, 999999)}"
     VERIFICATION_CODES[email_clean] = code
 
-    return {
+    sent = send_real_email_code(email_clean, code)
+
+    res = {
         "message": f"A 6-digit verification code has been sent to {email_clean}. Please check your inbox.",
-        "email": email_clean
+        "email": email_clean,
+        "email_sent": sent
     }
+    if not sent:
+        res["dev_code"] = code
+        res["note"] = "SMTP server not configured in environment variables."
+    return res
 
 @router.post("/verify-code")
 def verify_code(req: VerifyCodeRequest):

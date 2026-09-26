@@ -115,7 +115,11 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
     try {
       const res = await api.sendPhoneCode(cleanPhone);
       setPhoneCodeSent(true);
-      setPhoneCodeMsg(res.message || `Verification code sent to ${cleanPhone}.`);
+      if (res.dev_code) {
+        setPhoneCodeMsg(`SMS Verification Code: ${res.dev_code} (Twilio SMS gateway not configured on server)`);
+      } else {
+        setPhoneCodeMsg(res.message || `Verification code sent to ${cleanPhone}. Please check your SMS.`);
+      }
       setPhoneCode(''); // Keep code input blank!
     } catch (err) {
       setError(err.message || 'Could not send verification code. Please try again.');
@@ -213,7 +217,11 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
       const res = await api.forgotPassword(norm);
       setRecoveryStep(2);
       setRecoveryCode(''); // Keep blank!
-      setRecoverySuccess(res.message || `A 6-digit verification code has been sent to ${norm}.`);
+      if (res.dev_code) {
+        setRecoverySuccess(`Verification Code: ${res.dev_code} (SMTP server not set on Render backend)`);
+      } else {
+        setRecoverySuccess(res.message || `A 6-digit verification code has been sent to ${norm}. Please check your inbox.`);
+      }
     } catch (err) {
       setRecoveryError(err.message || 'Could not send verification code. Please try again.');
     } finally {
