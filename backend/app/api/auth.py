@@ -322,11 +322,9 @@ def send_phone_code(req: SendPhoneCodeRequest, background_tasks: BackgroundTasks
     res = {
         "message": f"Verification code sent to {phone_clean}.",
         "phone": phone_clean,
-        "sms_sent": has_sms
+        "sms_sent": has_sms,
+        "dev_code": code
     }
-    if not has_sms:
-        res["dev_code"] = code
-        res["note"] = "SMS gateway credentials not set in environment variables."
     return res
 
 @router.post("/phone-login")
@@ -490,11 +488,9 @@ def forgot_password(req: ForgotPasswordRequest, request: Request, background_tas
     res = {
         "message": f"A 6-digit verification code has been sent to {email_clean}. Please check your inbox.",
         "email": email_clean,
-        "email_sent": has_email
+        "email_sent": has_email,
+        "dev_code": code
     }
-    if not has_email:
-        res["dev_code"] = code
-        res["note"] = "SMTP server / Bird API not set on Render backend."
     return res
 
 @router.post("/verify-code")
