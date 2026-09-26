@@ -115,12 +115,8 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
     try {
       const res = await api.sendPhoneCode(cleanPhone);
       setPhoneCodeSent(true);
-      if (res.dev_code) {
-        setPhoneCodeMsg(`SMS Verification Code: ${res.dev_code}`);
-      } else {
-        setPhoneCodeMsg(res.message || `Verification code sent to ${cleanPhone}. Please check your SMS.`);
-      }
-      setPhoneCode(''); // Keep code input blank!
+      setPhoneCodeMsg(res.message || `Verification code sent to ${cleanPhone}. Please check your SMS.`);
+      setPhoneCode('');
     } catch (err) {
       setError(err.message || 'Could not send verification code. Please try again.');
     } finally {
@@ -216,12 +212,8 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
     try {
       const res = await api.forgotPassword(norm);
       setRecoveryStep(2);
-      setRecoveryCode(''); // Keep blank!
-      if (res.dev_code) {
-        setRecoverySuccess(`Verification Code: ${res.dev_code} (Sent to inbox; use code above to reset password)`);
-      } else {
-        setRecoverySuccess(res.message || `A 6-digit verification code has been sent to ${norm}. Please check your inbox.`);
-      }
+      setRecoveryCode('');
+      setRecoverySuccess(res.message || `A 6-digit verification code has been sent to ${norm}. Please check your inbox.`);
     } catch (err) {
       setRecoveryError(err.message || 'Could not send verification code. Please try again.');
     } finally {

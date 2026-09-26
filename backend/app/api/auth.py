@@ -198,38 +198,74 @@ def send_real_email_code(recipient_email: str, code: str) -> bool:
         except Exception as err:
             print(f"[RESEND EMAIL ERROR] {err}")
 
-    # 1. Try Bird API / MessageBird Email if configured
+    # 1. Try Bird API (bird.com) Email if configured
     bird_api_key = os.environ.get("BIRD_API_KEY") or os.environ.get("MESSAGEBIRD_API_KEY")
-    sender_email = os.environ.get("SENDER_EMAIL") or os.environ.get("SMTP_USER") or os.environ.get("SMTP_USERNAME") or "noreply@deepflow.ai"
+    sender_email = os.environ.get("SENDER_EMAIL") or os.environ.get("SMTP_USER") or "noreply@deepflow.ai"
+    bird_workspace_id = os.environ.get("BIRD_WORKSPACE_ID") or ""
 
     if bird_api_key:
         try:
             import requests
-            headers_access = {
+
+            html_body = f"""
+            <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px;">
+                <h2 style="color: #1f4333;">DeepFlow AI Password Recovery</h2>
+                <p>You requested to reset your password. Use the verification code below:</p>
+                <div style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #8e6b32; background: #fdfaf4; padding: 16px; text-align: center; border-radius: 8px; margin: 20px 0;">
+                    {code}
+                </div>
+                <p style="font-size: 12px; color: #666;">This code is valid for 15 minutes. If you did not request this, please ignore this email.</p>
+            </div>
+            """
+
+            # Bird.com v2 API (current platform)
+            if bird_workspace_id:
+                bird_url = f"https://api.bird.com/workspaces/{bird_workspace_id}/channels/email/messages"
+            else:
+                bird_url = "https://api.bird.com/workspaces/default/channels/email/messages"
+
+            bird_payload = {
+                "receiver": {
+                    "contacts": [{"identifierValue": recipient_email}]
+                },
+                "body": {
+                    "type": "email",
+                    "email": {
+                        "from": {"address": sender_email},
+                        "subject": f"Your DeepFlow AI Verification Code: {code}",
+                        "html": html_body
+                    }
+                }
+            }
+            bird_headers = {
                 "Authorization": f"AccessKey {bird_api_key}",
                 "Content-Type": "application/json"
             }
-            headers_bearer = {
-                "Authorization": f"Bearer {bird_api_key}",
-                "Content-Type": "application/json"
-            }
-            payload = {
-                "from": sender_email,
-                "to": [recipient_email],
-                "subject": f"Your DeepFlow AI Verification Code: {code}",
-                "html": f"Your DeepFlow AI verification code is <b>{code}</b>."
-            }
-            res = requests.post("https://rest.messagebird.com/email", json=payload, headers=headers_access, timeout=10)
+            res = requests.post(bird_url, json=bird_payload, headers=bird_headers, timeout=10)
+            print(f"[BIRD EMAIL] Response {res.status_code}: {res.text[:300]}")
             if res.status_code in [200, 201, 202]:
                 print(f"[BIRD EMAIL SUCCESS] Email sent to {recipient_email}")
                 return True
-            
-            res2 = requests.post("https://api.bird.com/v1/emails", json=payload, headers=headers_bearer, timeout=10)
+
+            # Fallback: MessageBird legacy REST API
+            mb_payload = {
+                "from": sender_email,
+                "to": [recipient_email],
+                "subject": f"Your DeepFlow AI Verification Code: {code}",
+                "html": html_body
+            }
+            res2 = requests.post(
+                "https://rest.messagebird.com/email",
+                json=mb_payload,
+                headers={"Authorization": f"AccessKey {bird_api_key}", "Content-Type": "application/json"},
+                timeout=10
+            )
+            print(f"[MESSAGEBIRD EMAIL] Response {res2.status_code}: {res2.text[:300]}")
             if res2.status_code in [200, 201, 202]:
-                print(f"[BIRD EMAIL V2 SUCCESS] Email sent to {recipient_email}")
+                print(f"[MESSAGEBIRD EMAIL SUCCESS] Email sent to {recipient_email}")
                 return True
 
-            print(f"[BIRD EMAIL NOTICE] Status {res.status_code}: {res.text}")
+            print(f"[BIRD EMAIL FAILED] Both endpoints failed. Bird: {res.status_code}, MB: {res2.status_code}")
         except Exception as err:
             print(f"[BIRD EMAIL ERROR] {err}")
 
@@ -363,16 +399,12 @@ def send_phone_code(req: SendPhoneCodeRequest, background_tasks: BackgroundTasks
     code = f"{random.randint(100000, 999999)}"
     PHONE_CODES[phone_clean] = code
 
-    has_sms = bool(os.environ.get("BIRD_API_KEY") or os.environ.get("MESSAGEBIRD_API_KEY") or os.environ.get("TWILIO_ACCOUNT_SID"))
     background_tasks.add_task(send_real_sms_code, phone_clean, code)
 
-    res = {
-        "message": f"Verification code sent to {phone_clean}.",
-        "phone": phone_clean,
-        "sms_sent": has_sms,
-        "dev_code": code
+    return {
+        "message": f"Verification code sent to {phone_clean}. Please check your SMS.",
+        "phone": phone_clean
     }
-    return res
 
 @router.post("/phone-login")
 def phone_login(req: PhoneLoginRequest, request: Request, db: Session = Depends(get_db)):
@@ -383,7 +415,9 @@ def phone_login(req: PhoneLoginRequest, request: Request, db: Session = Depends(
     code_input = req.code.strip() if req.code else ""
     stored_code = PHONE_CODES.get(phone_clean)
 
-    if not stored_code or stored_code != code_input:
+    if not stored_code:
+        raise HTTPException(status_code=400, detail="Verification code expired or not found. Please request a new code.")
+    if stored_code != code_input:
         raise HTTPException(status_code=400, detail="Invalid verification code. Please enter the code sent to your phone.")
 
     user = db.query(User).filter((User.phone == phone_clean) | (User.phone == phone_clean.replace(" ", ""))).first()
@@ -529,16 +563,12 @@ def forgot_password(req: ForgotPasswordRequest, request: Request, background_tas
     code = f"{random.randint(100000, 999999)}"
     VERIFICATION_CODES[email_clean] = code
 
-    has_email = bool(os.environ.get("SMTP_HOST") or os.environ.get("SMTP_SERVER") or os.environ.get("BIRD_API_KEY"))
     background_tasks.add_task(send_real_email_code, email_clean, code)
 
-    res = {
+    return {
         "message": f"A 6-digit verification code has been sent to {email_clean}. Please check your inbox.",
-        "email": email_clean,
-        "email_sent": has_email,
-        "dev_code": code
+        "email": email_clean
     }
-    return res
 
 @router.post("/verify-code")
 def verify_code(req: VerifyCodeRequest):
@@ -549,7 +579,9 @@ def verify_code(req: VerifyCodeRequest):
     if not code_input or len(code_input) != 6:
         raise HTTPException(status_code=400, detail="Please enter a valid 6-digit verification code.")
 
-    if stored_code and stored_code != code_input:
+    if not stored_code:
+        raise HTTPException(status_code=400, detail="Verification code expired or not found. Please request a new code.")
+    if stored_code != code_input:
         raise HTTPException(status_code=400, detail="Invalid verification code. Please enter the code sent to your email.")
 
     return {"message": "Verification code accepted."}
@@ -563,7 +595,9 @@ def reset_password(req: ResetPasswordRequest, request: Request, db: Session = De
     code_input = req.code.strip() if req.code else ""
     stored_code = VERIFICATION_CODES.get(email_clean)
 
-    if stored_code and stored_code != code_input:
+    if not stored_code:
+        raise HTTPException(status_code=400, detail="Verification code expired or not found. Please request a new code.")
+    if stored_code != code_input:
         raise HTTPException(status_code=400, detail="Invalid verification code. Please enter the code sent to your email.")
 
     user = db.query(User).filter(User.email == email_clean).first()
