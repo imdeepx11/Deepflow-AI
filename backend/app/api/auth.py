@@ -1,7 +1,7 @@
 import os
 import hashlib
 import random
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Request, BackgroundTasks
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.database.database import get_db
@@ -198,18 +198,18 @@ def send_real_email_code(recipient_email: str, code: str) -> bool:
             msg.attach(MIMEText(html_content, "html"))
 
             if smtp_port == 465 or not use_tls:
-                with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
+                with smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=5) as server:
                     server.login(smtp_user, smtp_pass)
                     server.sendmail(sender_email, [recipient_email], msg.as_string())
             else:
-                with smtplib.SMTP(smtp_server, smtp_port) as server:
+                with smtplib.SMTP(smtp_server, smtp_port, timeout=5) as server:
                     server.starttls()
                     server.login(smtp_user, smtp_pass)
                     server.sendmail(sender_email, [recipient_email], msg.as_string())
             print(f"[SMTP SUCCESS] Verification code email sent successfully to {recipient_email}")
             return True
         except Exception as err:
-            print(f"[SMTP ERROR] Failed to send email via SMTP ({smtp_server}): {err}")
+            print(f"[SMTP ERROR] Failed to send email via SMTP ({smtp_server}:{smtp_port}): {err}")
 
     # 2. Try Bird API / MessageBird Email if configured
     bird_api_key = os.environ.get("BIRD_API_KEY") or os.environ.get("MESSAGEBIRD_API_KEY")
@@ -230,13 +230,13 @@ def send_real_email_code(recipient_email: str, code: str) -> bool:
                 "subject": f"Your DeepFlow AI Verification Code: {code}",
                 "html": f"Your DeepFlow AI verification code is <b>{code}</b>."
             }
-            res = requests.post("https://rest.messagebird.com/email", json=payload, headers=headers_access, timeout=10)
+            res = requests.post("https://rest.messagebird.com/email", json=payload, headers=headers_access, timeout=5)
             if res.status_code in [200, 201, 202]:
                 print(f"[BIRD EMAIL SUCCESS] Email sent to {recipient_email}")
                 return True
             
             # Retry with Bearer header if AccessKey failed
-            res2 = requests.post("https://api.bird.com/v1/emails", json=payload, headers=headers_bearer, timeout=10)
+            res2 = requests.post("https://api.bird.com/v1/emails", json=payload, headers=headers_bearer, timeout=5)
             if res2.status_code in [200, 201, 202]:
                 print(f"[BIRD EMAIL V2 SUCCESS] Email sent to {recipient_email}")
                 return True
@@ -254,7 +254,6 @@ def send_real_sms_code(phone: str, code: str) -> bool:
     if bird_api_key:
         try:
             import requests
-            # Try MessageBird REST API
             headers_access = {
                 "Authorization": f"AccessKey {bird_api_key}",
                 "Content-Type": "application/json"
@@ -264,17 +263,16 @@ def send_real_sms_code(phone: str, code: str) -> bool:
                 "recipients": [phone],
                 "body": f"Your DeepFlow AI verification code is: {code}"
             }
-            res = requests.post("https://rest.messagebird.com/messages", json=payload, headers=headers_access, timeout=10)
+            res = requests.post("https://rest.messagebird.com/messages", json=payload, headers=headers_access, timeout=5)
             if res.status_code in [200, 201]:
                 print(f"[BIRD SMS SUCCESS] SMS sent to {phone}")
                 return True
 
-            # Try Bird v2 API Bearer Auth
             headers_bearer = {
                 "Authorization": f"Bearer {bird_api_key}",
                 "Content-Type": "application/json"
             }
-            res2 = requests.post("https://api.bird.com/v2/messages", json=payload, headers=headers_bearer, timeout=10)
+            res2 = requests.post("https://api.bird.com/v2/messages", json=payload, headers=headers_bearer, timeout=5)
             if res2.status_code in [200, 201]:
                 print(f"[BIRD V2 SMS SUCCESS] SMS sent to {phone}")
                 return True
@@ -297,7 +295,7 @@ def send_real_sms_code(phone: str, code: str) -> bool:
                 "To": phone,
                 "Body": f"Your DeepFlow AI verification code is: {code}"
             }
-            res = requests.post(url, data=data, auth=(twilio_sid, twilio_auth), timeout=10)
+            res = requests.post(url, data=data, auth=(twilio_sid, twilio_auth), timeout=5)
             if res.status_code in [200, 201]:
                 print(f"[TWILIO SMS SUCCESS] Twilio SMS sent successfully to {phone}")
                 return True
@@ -310,7 +308,7 @@ def send_real_sms_code(phone: str, code: str) -> bool:
     return False
 
 @router.post("/send-phone-code")
-def send_phone_code(req: SendPhoneCodeRequest):
+def send_phone_code(req: SendPhoneCodeRequest, background_tasks: BackgroundTasks):
     phone_clean = req.phone.strip() if req.phone else ""
     if not phone_clean or len(phone_clean) < 7:
         raise HTTPException(status_code=400, detail="Please enter a valid phone number.")
@@ -318,16 +316,17 @@ def send_phone_code(req: SendPhoneCodeRequest):
     code = f"{random.randint(100000, 999999)}"
     PHONE_CODES[phone_clean] = code
 
-    sent = send_real_sms_code(phone_clean, code)
+    has_sms = bool(os.environ.get("BIRD_API_KEY") or os.environ.get("MESSAGEBIRD_API_KEY") or os.environ.get("TWILIO_ACCOUNT_SID"))
+    background_tasks.add_task(send_real_sms_code, phone_clean, code)
 
     res = {
         "message": f"Verification code sent to {phone_clean}.",
         "phone": phone_clean,
-        "sms_sent": sent
+        "sms_sent": has_sms
     }
-    if not sent:
+    if not has_sms:
         res["dev_code"] = code
-        res["note"] = "SMS gateway credentials (TWILIO_ACCOUNT_SID) not set in environment variables."
+        res["note"] = "SMS gateway credentials not set in environment variables."
     return res
 
 @router.post("/phone-login")
@@ -444,7 +443,7 @@ class ResetPasswordRequest(BaseModel):
     new_password: str
 
 @router.post("/forgot-password")
-def forgot_password(req: ForgotPasswordRequest, request: Request, db: Session = Depends(get_db)):
+def forgot_password(req: ForgotPasswordRequest, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     if not req.email or not req.email.strip():
         raise HTTPException(status_code=400, detail="Email address is required.")
 
@@ -485,16 +484,17 @@ def forgot_password(req: ForgotPasswordRequest, request: Request, db: Session = 
     code = f"{random.randint(100000, 999999)}"
     VERIFICATION_CODES[email_clean] = code
 
-    sent = send_real_email_code(email_clean, code)
+    has_email = bool(os.environ.get("SMTP_HOST") or os.environ.get("SMTP_SERVER") or os.environ.get("BIRD_API_KEY"))
+    background_tasks.add_task(send_real_email_code, email_clean, code)
 
     res = {
         "message": f"A 6-digit verification code has been sent to {email_clean}. Please check your inbox.",
         "email": email_clean,
-        "email_sent": sent
+        "email_sent": has_email
     }
-    if not sent:
+    if not has_email:
         res["dev_code"] = code
-        res["note"] = "SMTP server not configured in environment variables."
+        res["note"] = "SMTP server / Bird API not set on Render backend."
     return res
 
 @router.post("/verify-code")
