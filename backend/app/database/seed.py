@@ -1,8 +1,12 @@
 import os
+import hashlib
 from datetime import datetime, timedelta
 from app.database.database import engine, Base, SessionLocal
 from app.database.models import User, Document, DocumentAnalysis, Workflow, WorkflowStep, Approval, AuditLog
 from app.services.ai_service import AIService
+
+def hash_password(password: str) -> str:
+    return hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), b'deepflow_salt_2026', 100000).hex()
 
 def seed_db():
     Base.metadata.create_all(bind=engine)
@@ -20,12 +24,15 @@ def seed_db():
     user = User(
         name="Demo Administrator",
         email="demo@deepflow.ai",
+        password_hash=hash_password("demo123"),
         role="Admin",
         department="Operations",
         avatar=""
     )
     db.add(user)
     db.commit()
+
+
 
     sample_docs = [
         ("Invoice_1024.pdf", "PDF", 245000, "Alex Morgan", "Pending Approval", "HIGH"),

@@ -1,3 +1,5 @@
+import hashlib
+import random
 from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -7,6 +9,17 @@ from app.database.models import User, AuditLog
 import re
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+def hash_password(password: str) -> str:
+    return hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), b'deepflow_salt_2026', 100000).hex()
+
+def verify_password(password: str, hashed: str) -> bool:
+    if not hashed:
+        return True
+    return hash_password(password) == hashed
+
+# In-memory storage for active reset verification codes
+VERIFICATION_CODES = {}
 
 class LoginRequest(BaseModel):
     email: str
@@ -38,12 +51,21 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
 
     user = db.query(User).filter(User.email == email_clean).first()
     
-    if not user:
+    if user:
+        if user.password_hash:
+            if not verify_password(req.password, user.password_hash):
+                raise HTTPException(status_code=400, detail="Invalid email or password. Please enter the correct password.")
+        else:
+            # First time login with existing user account — set initial password hash
+            user.password_hash = hash_password(req.password)
+            db.commit()
+    else:
         derived_name = "Demo Administrator" if "demo" in email_clean or "admin" in email_clean else name_from_email(email_clean)
         role = "Admin" if "admin" in email_clean or "demo" in email_clean else "User"
         user = User(
             name=derived_name,
             email=email_clean,
+            password_hash=hash_password(req.password),
             role=role,
             department="Operations"
         )
@@ -172,18 +194,27 @@ def forgot_password(req: ForgotPasswordRequest, request: Request, db: Session = 
     except Exception as e:
         print(f"Error logging password reset request: {e}")
 
-    # Generate a demo 6-digit verification code
-    demo_code = "849201"
+    # Generate a random 6-digit verification code
+    code = f"{random.randint(100000, 999999)}"
+    VERIFICATION_CODES[email_clean] = code
+
     return {
-        "message": f"Verification code sent to {email_clean}",
-        "email": email_clean,
-        "code": demo_code
+        "message": f"A 6-digit verification code has been sent to {email_clean}. Please check your inbox.",
+        "email": email_clean
     }
 
 @router.post("/verify-code")
 def verify_code(req: VerifyCodeRequest):
-    if not req.code or len(req.code.strip()) != 6:
-        raise HTTPException(status_code=400, detail="Invalid 6-digit verification code.")
+    email_clean = req.email.strip().lower()
+    code_input = req.code.strip() if req.code else ""
+    stored_code = VERIFICATION_CODES.get(email_clean)
+
+    if not code_input or len(code_input) != 6:
+        raise HTTPException(status_code=400, detail="Please enter a valid 6-digit verification code.")
+
+    if stored_code and stored_code != code_input:
+        raise HTTPException(status_code=400, detail="Invalid verification code. Please enter the code sent to your email.")
+
     return {"message": "Verification code accepted."}
 
 @router.post("/reset-password")
@@ -192,23 +223,43 @@ def reset_password(req: ResetPasswordRequest, request: Request, db: Session = De
         raise HTTPException(status_code=400, detail="Password must contain at least 6 characters.")
 
     email_clean = req.email.strip().lower()
+    code_input = req.code.strip() if req.code else ""
+    stored_code = VERIFICATION_CODES.get(email_clean)
+
+    if stored_code and stored_code != code_input:
+        raise HTTPException(status_code=400, detail="Invalid verification code. Please enter the code sent to your email.")
+
     user = db.query(User).filter(User.email == email_clean).first()
+    if not user:
+        derived_name = name_from_email(email_clean)
+        user = User(
+            name=derived_name,
+            email=email_clean,
+            role="User",
+            department="Operations"
+        )
+        db.add(user)
+
+    user.password_hash = hash_password(req.new_password)
+    db.commit()
+    db.refresh(user)
+
+    VERIFICATION_CODES.pop(email_clean, None)
 
     client_ip = request.headers.get("X-Forwarded-For", request.client.host if request.client else "unknown")
 
-    if user:
-        try:
-            audit_entry = AuditLog(
-                user_name=user.name,
-                user_role=user.role,
-                action="PASSWORD_RESET_SUCCESS",
-                status="Success",
-                details=f"Password successfully reset for {user.email} (IP: {client_ip})"
-            )
-            db.add(audit_entry)
-            db.commit()
-        except Exception as e:
-            print(f"Error logging password reset success: {e}")
+    try:
+        audit_entry = AuditLog(
+            user_name=user.name,
+            user_role=user.role,
+            action="PASSWORD_RESET_SUCCESS",
+            status="Success",
+            details=f"Password successfully reset for {user.email} (IP: {client_ip})"
+        )
+        db.add(audit_entry)
+        db.commit()
+    except Exception as e:
+        print(f"Error logging password reset success: {e}")
 
     return {"message": "Password reset successfully. You can now sign in with your new password."}
 
@@ -236,5 +287,6 @@ def me(user_id: int = None, db: Session = Depends(get_db)):
         "department": user.department,
         "avatar": user.avatar
     }
+
 
 

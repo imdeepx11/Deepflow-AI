@@ -1,19 +1,27 @@
 import os
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-
+from sqlalchemy import text
 from app.database.database import engine, Base
 from app.database.seed import seed_db
 from app.api import auth, documents, workflows, analytics, audit_logs, ai_chat, settings
 
-# Ensure database tables are created and seed demo data
+
+# Ensure database tables are created and schema migrations applied
 Base.metadata.create_all(bind=engine)
+try:
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE users ADD COLUMN password_hash VARCHAR"))
+        conn.commit()
+except Exception:
+    pass
+
 try:
     seed_db()
 except Exception as exc:
     print(f"Database seed note: {exc}")
+
 
 app = FastAPI(
     title="DeepFlow AI Backend API",

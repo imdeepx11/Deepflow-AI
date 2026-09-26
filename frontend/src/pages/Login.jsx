@@ -114,16 +114,15 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
     try {
       const res = await api.forgotPassword(norm);
       setRecoveryStep(2);
-      if (res.code) {
-        setRecoveryCode(res.code);
-        setRecoverySuccess(`Verification code generated: ${res.code}`);
-      }
+      setRecoveryCode('');
+      setRecoverySuccess(res.message || `A 6-digit verification code has been sent to ${norm}.`);
     } catch (err) {
       setRecoveryError(err.message || 'Could not send verification code. Please try again.');
     } finally {
       setRecoveryLoading(false);
     }
   };
+
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
