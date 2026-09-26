@@ -1,17 +1,49 @@
 from typing import Optional
-from fastapi import APIRouter
-from app.database.database import collection, to_iso
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from app.database.database import get_db
+from app.database.models import AuditLog
 
-router=APIRouter(prefix="/api/audit-logs",tags=["audit_logs"])
+router = APIRouter(prefix="/api/audit-logs", tags=["audit_logs"])
 
 @router.get("")
-def list_audit_logs(user_name:Optional[str]=None,action:Optional[str]=None,status:Optional[str]=None,search:Optional[str]=None):
-    out=[]
-    for s in collection("audit_logs").stream():
-        d=s.to_dict() or {}; d["id"]=s.id
-        if user_name and user_name!="All" and d.get("user_name")!=user_name: continue
-        if action and action!="All" and action.lower() not in str(d.get("action","")).lower(): continue
-        if status and status!="All" and d.get("status")!=status: continue
-        if search and search.lower() not in " ".join([str(d.get("document_name") or ""),str(d.get("details") or ""),str(d.get("user_name") or "")]).lower(): continue
-        out.append({"id":d["id"],"timestamp":to_iso(d.get("timestamp")),"user":d.get("user_name","Unknown"),"role":d.get("user_role","User"),"action":d.get("action","Unknown"),"document":d.get("document_name") or "N/A","workflow":d.get("workflow_name") or "N/A","status":d.get("status","Success"),"details":d.get("details")})
-    out.sort(key=lambda x:x.get("timestamp") or "",reverse=True); return out
+def list_audit_logs(
+    user_name: Optional[str] = None,
+    action: Optional[str] = None,
+    status: Optional[str] = None,
+    search: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(AuditLog)
+
+    if user_name and user_name != "All":
+        query = query.filter(AuditLog.user_name == user_name)
+    if action and action != "All":
+        query = query.filter(AuditLog.action.ilike(f"%{action}%"))
+    if status and status != "All":
+        query = query.filter(AuditLog.status == status)
+    if search:
+        search_filter = f"%{search}%"
+        query = query.filter(
+            (AuditLog.user_name.ilike(search_filter)) |
+            (AuditLog.document_name.ilike(search_filter)) |
+            (AuditLog.action.ilike(search_filter)) |
+            (AuditLog.details.ilike(search_filter))
+        )
+
+    logs = query.order_by(AuditLog.timestamp.desc()).all()
+    out = []
+    for log in logs:
+        out.append({
+            "id": log.id,
+            "timestamp": log.timestamp.isoformat() if log.timestamp else None,
+            "user": log.user_name or "Unknown",
+            "role": log.user_role or "User",
+            "action": log.action or "Unknown",
+            "document": log.document_name or "N/A",
+            "workflow": log.workflow_name or "N/A",
+            "status": log.status or "Success",
+            "details": log.details or "N/A"
+        })
+    return out
+

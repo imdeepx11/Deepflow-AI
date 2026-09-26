@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, CheckCircle2, Lock, Mail, Moon, Sparkles, Sun } from 'lucide-react';
+import { ArrowRight, CheckCircle2, KeyRound, Lock, Mail, Moon, Sparkles, Sun, X, Loader2 } from 'lucide-react';
 import { api } from '../api';
 import { isGoogleAuthConfigured, signInWithGoogle } from '../firebase-client';
 
@@ -22,6 +22,16 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Password Recovery Modal state
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [recoveryStep, setRecoveryStep] = useState(1); // 1: Email, 2: Code & New Password, 3: Success
+  const [recoveryCode, setRecoveryCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
+  const [recoveryError, setRecoveryError] = useState('');
+  const [recoverySuccess, setRecoverySuccess] = useState('');
 
   const submit = async (event) => {
     event.preventDefault();
@@ -82,6 +92,62 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
     }
   };
 
+  const handleOpenRecovery = () => {
+    setRecoveryEmail(email || '');
+    setRecoveryStep(1);
+    setRecoveryCode('');
+    setNewPassword('');
+    setRecoveryError('');
+    setRecoverySuccess('');
+    setRecoveryOpen(true);
+  };
+
+  const handleRequestCode = async (e) => {
+    e.preventDefault();
+    setRecoveryError('');
+    const norm = recoveryEmail.trim().toLowerCase();
+    if (!EMAIL_REGEX.test(norm)) {
+      setRecoveryError('Please enter a valid email address.');
+      return;
+    }
+    setRecoveryLoading(true);
+    try {
+      const res = await api.forgotPassword(norm);
+      setRecoveryStep(2);
+      if (res.code) {
+        setRecoveryCode(res.code);
+        setRecoverySuccess(`Verification code generated: ${res.code}`);
+      }
+    } catch (err) {
+      setRecoveryError(err.message || 'Could not send verification code. Please try again.');
+    } finally {
+      setRecoveryLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setRecoveryError('');
+    if (!recoveryCode || recoveryCode.trim().length !== 6) {
+      setRecoveryError('Please enter a 6-digit verification code.');
+      return;
+    }
+    if (!newPassword || newPassword.length < 6) {
+      setRecoveryError('New password must contain at least 6 characters.');
+      return;
+    }
+    setRecoveryLoading(true);
+    try {
+      await api.resetPassword(recoveryEmail.trim().toLowerCase(), recoveryCode, newPassword);
+      setRecoveryStep(3);
+      setRecoverySuccess('Password reset successfully! You can now sign in with your new password.');
+    } catch (err) {
+      setRecoveryError(err.message || 'Password reset failed.');
+    } finally {
+      setRecoveryLoading(false);
+    }
+  };
+
   const busy = loading || googleLoading;
 
   return (
@@ -136,7 +202,10 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
                 <div className="login-field"><Mail size={15} /><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" autoComplete="email" required /></div>
               </label>
               <label>
-                <span className="login-label">Password</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <span className="login-label" style={{ marginBottom: 0 }}>Password</span>
+                  <button type="button" onClick={handleOpenRecovery} style={{ background: 'none', border: 'none', color: '#8e6b32', fontSize: 11, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>Forgot password?</button>
+                </div>
                 <div className="login-field"><Lock size={15} /><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" autoComplete="current-password" minLength={6} required /></div>
               </label>
               <button className="primary-btn login-submit" type="submit" disabled={busy}>
@@ -150,6 +219,133 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
           </div>
         </section>
       </div>
+
+      {recoveryOpen && (
+        <div className="editorial-modal-backdrop" role="presentation">
+          <div className="editorial-modal" style={{ maxWidth: 440, borderRadius: 20, padding: '28px 28px 24px' }} role="dialog" aria-modal="true">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+              <div>
+                <div className="page-kicker" style={{ color: '#a9814c', letterSpacing: '0.08em', fontWeight: 700 }}>PASSWORD RECOVERY</div>
+                <h2 style={{ fontSize: 24, fontFamily: 'Playfair Display, Georgia, serif', margin: '4px 0 6px', color: '#1d2233' }}>
+                  {recoveryStep === 3 ? 'Password reset!' : 'Forgot your password?'}
+                </h2>
+              </div>
+              <button className="close-btn" type="button" onClick={() => setRecoveryOpen(false)} aria-label="Close modal">
+                <X size={18} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: 12, color: '#5a6178', lineHeight: 1.5, margin: '0 0 16px' }}>
+              {recoveryStep === 1 && 'Enter your account email and we will send a 6-digit verification code.'}
+              {recoveryStep === 2 && 'Enter the 6-digit verification code and your new password below.'}
+              {recoveryStep === 3 && 'Your password has been successfully updated. You can now close this window and sign in.'}
+            </p>
+
+            {recoveryError && (
+              <div className="login-error" style={{ marginBottom: 14 }} role="alert">
+                {recoveryError}
+              </div>
+            )}
+
+            {recoverySuccess && recoveryStep !== 3 && (
+              <div style={{ padding: '9px 12px', borderRadius: 10, background: '#eef8f2', border: '1px solid #c8e8d4', color: '#1f6b43', fontSize: 11, fontWeight: 600, marginBottom: 14 }}>
+                {recoverySuccess}
+              </div>
+            )}
+
+            {recoveryStep === 1 && (
+              <form onSubmit={handleRequestCode}>
+                <label style={{ display: 'block', marginBottom: 16 }}>
+                  <span className="login-label" style={{ fontSize: 10, letterSpacing: '0.06em' }}>EMAIL ADDRESS</span>
+                  <div className="login-field" style={{ marginTop: 6 }}>
+                    <Mail size={15} />
+                    <input
+                      type="email"
+                      value={recoveryEmail}
+                      onChange={(e) => setRecoveryEmail(e.target.value)}
+                      placeholder="name@example.com"
+                      required
+                    />
+                  </div>
+                </label>
+                <button
+                  className="primary-btn"
+                  type="submit"
+                  disabled={recoveryLoading}
+                  style={{ width: '100%', justifyContent: 'center', padding: '12px 16px', background: '#1f4333', color: '#fff', borderRadius: 24 }}
+                >
+                  {recoveryLoading ? (
+                    <><Loader2 size={15} className="animate-spin" /> Sending code…</>
+                  ) : (
+                    <>Send verification code <ArrowRight size={14} /></>
+                  )}
+                </button>
+              </form>
+            )}
+
+            {recoveryStep === 2 && (
+              <form onSubmit={handleResetPassword}>
+                <label style={{ display: 'block', marginBottom: 12 }}>
+                  <span className="login-label" style={{ fontSize: 10, letterSpacing: '0.06em' }}>VERIFICATION CODE (6 DIGITS)</span>
+                  <div className="login-field" style={{ marginTop: 6 }}>
+                    <KeyRound size={15} />
+                    <input
+                      type="text"
+                      maxLength={6}
+                      value={recoveryCode}
+                      onChange={(e) => setRecoveryCode(e.target.value)}
+                      placeholder="849201"
+                      required
+                    />
+                  </div>
+                </label>
+
+                <label style={{ display: 'block', marginBottom: 16 }}>
+                  <span className="login-label" style={{ fontSize: 10, letterSpacing: '0.06em' }}>NEW PASSWORD</span>
+                  <div className="login-field" style={{ marginTop: 6 }}>
+                    <Lock size={15} />
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="At least 6 characters"
+                      minLength={6}
+                      required
+                    />
+                  </div>
+                </label>
+
+                <button
+                  className="primary-btn"
+                  type="submit"
+                  disabled={recoveryLoading}
+                  style={{ width: '100%', justifyContent: 'center', padding: '12px 16px', background: '#1f4333', color: '#fff', borderRadius: 24 }}
+                >
+                  {recoveryLoading ? (
+                    <><Loader2 size={15} className="animate-spin" /> Resetting password…</>
+                  ) : (
+                    <>Reset password <CheckCircle2 size={14} /></>
+                  )}
+                </button>
+              </form>
+            )}
+
+            {recoveryStep === 3 && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+                <button
+                  className="primary-btn"
+                  type="button"
+                  onClick={() => setRecoveryOpen(false)}
+                  style={{ background: '#1f4333', color: '#fff', borderRadius: 24, padding: '10px 20px' }}
+                >
+                  Done
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

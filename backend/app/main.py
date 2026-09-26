@@ -4,16 +4,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.database.database import get_db
+from app.database.database import engine, Base
 from app.database.seed import seed_db
 from app.api import auth, documents, workflows, analytics, audit_logs, ai_chat, settings
 
-# Initialize Firestore through the database module and seed demo data once.
-get_db()
+# Ensure database tables are created and seed demo data
+Base.metadata.create_all(bind=engine)
 try:
     seed_db()
 except Exception as exc:
-    print(f"Firestore seed note: {exc}")
+    print(f"Database seed note: {exc}")
 
 app = FastAPI(
     title="DeepFlow AI Backend API",
@@ -48,7 +48,7 @@ def root():
         "name": "DeepFlow AI API",
         "status": "online",
         "version": "1.1.0",
-        "database": "Firebase Firestore",
+        "database": "SQLite / Relational DB",
         "documentation": "/docs",
     }
 

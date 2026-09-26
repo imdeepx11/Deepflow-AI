@@ -1,7 +1,8 @@
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
-  || (import.meta.env.DEV ? '/api' : 'https://deepflow-ai-1.onrender.com/api');
+  || (import.meta.env.DEV ? '/api' : 'https://deepflow-ai-2.onrender.com/api');
 
-export async function fetchApi(endpoint, options = {}) {
+
+export async function fetchApi(endpoint, options = {}, retried = false) {
   try {
     const res = await fetch(`${API_BASE}${endpoint}`, {
       headers: {
@@ -16,16 +17,26 @@ export async function fetchApi(endpoint, options = {}) {
     }
     return await res.json();
   } catch (error) {
+    if (!retried && (error.message.includes('fetch') || error.message.includes('Network') || error.message.includes('Failed to fetch'))) {
+      console.warn(`API retry for ${endpoint} due to server wake-up delay...`);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      return fetchApi(endpoint, options, true);
+    }
     console.error(`API Error on ${endpoint}:`, error);
     throw error;
   }
 }
 
+
 export const api = {
   // Auth
   login: (credentials) => fetchApi('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
   loginWithGoogle: (idToken) => fetchApi('/auth/google', { method: 'POST', body: JSON.stringify({ id_token: idToken }) }),
+  forgotPassword: (email) => fetchApi('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+  verifyCode: (email, code) => fetchApi('/auth/verify-code', { method: 'POST', body: JSON.stringify({ email, code }) }),
+  resetPassword: (email, code, new_password) => fetchApi('/auth/reset-password', { method: 'POST', body: JSON.stringify({ email, code, new_password }) }),
   getMe: () => fetchApi('/auth/me'),
+
 
   // Documents
   getDocuments: (params = {}) => {

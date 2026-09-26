@@ -21,8 +21,8 @@ export default function Documents({ user, onNavigateToAnalyzer, onOpenUpload }) 
           status: status !== 'All' ? status : undefined,
           doc_type: type !== 'All' ? type : undefined,
           priority: priority !== 'All' ? priority : undefined,
-          uploaded_by: user?.name || undefined,
         });
+
         setDocuments(data);
       } catch (error) {
         console.error('Documents load error:', error);
