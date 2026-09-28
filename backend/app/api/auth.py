@@ -182,7 +182,8 @@ def send_real_email_code(recipient_email: str, code: str) -> bool:
                 "Content-Type": "application/json"
             }
             payload = {
-                "from": os.environ.get("SENDER_EMAIL", "DeepFlow AI <onboarding@resend.dev>"),
+                # Always use Resend's shared sender — avoids 403 domain verification errors.
+                "from": "DeepFlow AI <onboarding@resend.dev>",
                 "to": [recipient_email],
                 "subject": f"Your DeepFlow AI Verification Code: {code}",
                 "html": f"""

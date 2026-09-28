@@ -213,7 +213,13 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
       const res = await api.forgotPassword(norm);
       setRecoveryStep(2);
       setRecoveryCode('');
-      setRecoverySuccess(res.message || `A 6-digit verification code has been sent to ${norm}. Please check your inbox.`);
+      if (res.demo_code) {
+        // Email not configured — show code directly on screen
+        setRecoveryCode(res.demo_code);
+        setRecoverySuccess(`📋 Email delivery is not configured. Your verification code is: ${res.demo_code} (auto-filled below)`);
+      } else {
+        setRecoverySuccess(res.message || `A 6-digit verification code has been sent to ${norm}. Please check your inbox.`);
+      }
     } catch (err) {
       setRecoveryError(err.message || 'Could not send verification code. Please try again.');
     } finally {
