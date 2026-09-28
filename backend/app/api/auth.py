@@ -165,6 +165,13 @@ def register(req: RegisterRequest, request: Request, db: Session = Depends(get_d
     }
 
 def send_real_email_code(recipient_email: str, code: str) -> bool:
+    import sys
+    # Debug: log which email providers are configured
+    bird_key_present = bool(os.environ.get("BIRD_API_KEY") or os.environ.get("MESSAGEBIRD_API_KEY"))
+    resend_key_present = bool(os.environ.get("RESEND_API_KEY"))
+    smtp_present = bool(os.environ.get("SMTP_HOST") and os.environ.get("SMTP_PASSWORD"))
+    print(f"[EMAIL DEBUG] Attempting to send OTP to {recipient_email} | Bird={bird_key_present} Resend={resend_key_present} SMTP={smtp_present}", flush=True)
+
     # 0. Try HTTP Email APIs if keys exist (Resend, Brevo, SendGrid, Bird)
     resend_api_key = os.environ.get("RESEND_API_KEY")
     if resend_api_key:
@@ -191,12 +198,12 @@ def send_real_email_code(recipient_email: str, code: str) -> bool:
             }
             res = requests.post("https://api.resend.com/emails", json=payload, headers=headers, timeout=10)
             if res.status_code in [200, 201, 202]:
-                print(f"[RESEND EMAIL SUCCESS] Verification code sent to {recipient_email}")
+                print(f"[RESEND EMAIL SUCCESS] Verification code sent to {recipient_email}", flush=True)
                 return True
             else:
-                print(f"[RESEND EMAIL NOTICE] {res.status_code}: {res.text}")
+                print(f"[RESEND EMAIL NOTICE] {res.status_code}: {res.text}", flush=True)
         except Exception as err:
-            print(f"[RESEND EMAIL ERROR] {err}")
+            print(f"[RESEND EMAIL ERROR] {err}", flush=True)
 
     # 1. Try Bird API (bird.com) Email if configured
     bird_api_key = os.environ.get("BIRD_API_KEY") or os.environ.get("MESSAGEBIRD_API_KEY")
@@ -249,25 +256,26 @@ def send_real_email_code(recipient_email: str, code: str) -> bool:
                 "Content-Type": "application/json"
             }
 
-            print(f"[BIRD EMAIL] Sending to {recipient_email} via {bird_url} from {from_email}")
+            print(f"[BIRD EMAIL] Sending to {recipient_email} via {bird_url} from {from_email}", flush=True)
             res = requests.post(bird_url, json=bird_payload, headers=bird_headers, timeout=10)
-            print(f"[BIRD EMAIL] Response {res.status_code}: {res.text[:500]}")
+            print(f"[BIRD EMAIL] Response {res.status_code}: {res.text[:500]}", flush=True)
 
             if res.status_code in [200, 201, 202]:
-                print(f"[BIRD EMAIL SUCCESS] Email sent to {recipient_email}")
+                print(f"[BIRD EMAIL SUCCESS] Email sent to {recipient_email}", flush=True)
                 return True
             else:
-                print(f"[BIRD EMAIL FAILED] Status {res.status_code}: {res.text}")
+                print(f"[BIRD EMAIL FAILED] Status {res.status_code}: {res.text}", flush=True)
 
         except Exception as err:
-            print(f"[BIRD EMAIL ERROR] {err}")
+            print(f"[BIRD EMAIL ERROR] {err}", flush=True)
 
-    # 2. Try SMTP if configured (matching SMTP_HOST, SMTP_USER, SMTP_PASSWORD, SMTP_PORT, SMTP_USE_TLS)
+    # 2. Try SMTP if configured
     smtp_server = os.environ.get("SMTP_HOST") or os.environ.get("SMTP_SERVER")
-    smtp_user = os.environ.get("SMTP_USER") or os.environ.get("SMTP_USERNAME")
+    smtp_user = os.environ.get("SMTP_USER") or os.environ.get("SMTP_USERNAME") or os.environ.get("SENDER_EMAIL")
     smtp_pass = os.environ.get("SMTP_PASSWORD")
     smtp_port_raw = os.environ.get("SMTP_PORT", "587")
     smtp_port = int(smtp_port_raw) if str(smtp_port_raw).isdigit() else 587
+    print(f"[SMTP DEBUG] server={smtp_server} user={smtp_user} pass_set={bool(smtp_pass)}", flush=True)
 
     if smtp_server and smtp_user and smtp_pass:
         try:
