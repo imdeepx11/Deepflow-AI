@@ -200,8 +200,7 @@ def send_real_email_code(recipient_email: str, code: str) -> bool:
 
     # 1. Try Bird API (bird.com) Email if configured
     bird_api_key = os.environ.get("BIRD_API_KEY") or os.environ.get("MESSAGEBIRD_API_KEY")
-    sender_email = os.environ.get("SENDER_EMAIL") or os.environ.get("SMTP_USER") or "noreply@deepflow.ai"
-    bird_workspace_id = os.environ.get("BIRD_WORKSPACE_ID") or ""
+    sender_email = os.environ.get("SENDER_EMAIL") or os.environ.get("SMTP_USER") or ""
 
     if bird_api_key:
         try:
@@ -218,54 +217,48 @@ def send_real_email_code(recipient_email: str, code: str) -> bool:
             </div>
             """
 
-            # Bird.com v2 API (current platform)
-            if bird_workspace_id:
-                bird_url = f"https://api.bird.com/workspaces/{bird_workspace_id}/channels/email/messages"
+            # Bird.com current API — regional base URL
+            # bk_eu1_... keys → EU region, everything else → US region
+            if bird_api_key.startswith("bk_eu1_"):
+                base_url = "https://eu1.platform.bird.com"
             else:
-                bird_url = "https://api.bird.com/workspaces/default/channels/email/messages"
+                base_url = "https://us1.platform.bird.com"
+
+            bird_url = f"{base_url}/v1/email/messages"
+
+            # Use a verified sender from env, or fall back to Bird's shared test sender
+            # (onboarding@messagebird.dev works without domain verification — for testing only)
+            from_email = sender_email if sender_email else "onboarding@messagebird.dev"
 
             bird_payload = {
-                "receiver": {
-                    "contacts": [{"identifierValue": recipient_email}]
+                "from": {
+                    "email": from_email,
+                    "name": "DeepFlow AI"
                 },
-                "body": {
-                    "type": "email",
-                    "email": {
-                        "from": {"address": sender_email},
-                        "subject": f"Your DeepFlow AI Verification Code: {code}",
-                        "html": html_body
-                    }
-                }
+                "to": [
+                    {"email": recipient_email}
+                ],
+                "subject": f"Your DeepFlow AI Verification Code: {code}",
+                "html": html_body,
+                "text": f"Your DeepFlow AI verification code is: {code}. This code is valid for 15 minutes.",
+                "category": "transactional"
             }
+
             bird_headers = {
-                "Authorization": f"AccessKey {bird_api_key}",
+                "Authorization": f"Bearer {bird_api_key}",
                 "Content-Type": "application/json"
             }
+
+            print(f"[BIRD EMAIL] Sending to {recipient_email} via {bird_url} from {from_email}")
             res = requests.post(bird_url, json=bird_payload, headers=bird_headers, timeout=10)
-            print(f"[BIRD EMAIL] Response {res.status_code}: {res.text[:300]}")
+            print(f"[BIRD EMAIL] Response {res.status_code}: {res.text[:500]}")
+
             if res.status_code in [200, 201, 202]:
                 print(f"[BIRD EMAIL SUCCESS] Email sent to {recipient_email}")
                 return True
+            else:
+                print(f"[BIRD EMAIL FAILED] Status {res.status_code}: {res.text}")
 
-            # Fallback: MessageBird legacy REST API
-            mb_payload = {
-                "from": sender_email,
-                "to": [recipient_email],
-                "subject": f"Your DeepFlow AI Verification Code: {code}",
-                "html": html_body
-            }
-            res2 = requests.post(
-                "https://rest.messagebird.com/email",
-                json=mb_payload,
-                headers={"Authorization": f"AccessKey {bird_api_key}", "Content-Type": "application/json"},
-                timeout=10
-            )
-            print(f"[MESSAGEBIRD EMAIL] Response {res2.status_code}: {res2.text[:300]}")
-            if res2.status_code in [200, 201, 202]:
-                print(f"[MESSAGEBIRD EMAIL SUCCESS] Email sent to {recipient_email}")
-                return True
-
-            print(f"[BIRD EMAIL FAILED] Both endpoints failed. Bird: {res.status_code}, MB: {res2.status_code}")
         except Exception as err:
             print(f"[BIRD EMAIL ERROR] {err}")
 
