@@ -566,21 +566,13 @@ def forgot_password(req: ForgotPasswordRequest, request: Request, background_tas
     code = f"{random.randint(100000, 999999)}"
     VERIFICATION_CODES[email_clean] = code
 
-    # Send email synchronously so we know if it succeeded
-    email_sent = send_real_email_code(email_clean, code)
+    # Send email — runs synchronously so logs appear immediately in Render
+    send_real_email_code(email_clean, code)
 
-    response: dict = {
-        "message": f"A 6-digit verification code has been sent to {email_clean}. Please check your inbox.",
+    return {
+        "message": f"A 6-digit verification code has been sent to {email_clean}. Please check your inbox and spam folder.",
         "email": email_clean
     }
-
-    # Demo fallback: if no email provider worked, return the code in the
-    # response so the UI can display it directly (useful for portfolio demos).
-    if not email_sent:
-        response["demo_code"] = code
-        response["message"] = "Email service is not configured. Your verification code is shown on screen."
-
-    return response
 
 @router.post("/verify-code")
 def verify_code(req: VerifyCodeRequest):
