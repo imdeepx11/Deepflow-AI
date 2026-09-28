@@ -233,9 +233,10 @@ def send_real_email_code(recipient_email: str, code: str) -> bool:
 
             bird_url = f"{base_url}/v1/email/messages"
 
-            # Use a verified sender from env, or fall back to Bird's shared test sender
-            # (onboarding@messagebird.dev works without domain verification — for testing only)
-            from_email = sender_email if sender_email else "onboarding@messagebird.dev"
+            # Bird shared test sender — works without domain verification.
+            # To use your own domain, verify it in the Bird dashboard first,
+            # then set SENDER_EMAIL to your verified address.
+            from_email = "onboarding@messagebird.dev"
 
             bird_payload = {
                 "from": {
