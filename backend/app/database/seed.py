@@ -57,7 +57,7 @@ def seed_db():
         elif "Purchase_Order" in fname:
             dummy_content += "PURCHASE ORDER PO-2026-9041\nSupplier: Global Hardware Vendors Ltd\nItems: 10x Enterprise Servers\nTotal PO Amount: ₹2,45,000.00\nDelivery Date: 2026-09-30"
         elif "Contract" in fname:
-            dummy_content += "MASTER SERVICE AGREEMENT\nParties: DeepFlow Inc & Apex Cloud Systems\nEffective Date: 2026-10-01\nAnnual Contract Value: ₹12,00,000.00\nTermination Notice: 60 Days"
+            dummy_content += "MASTER SERVICE AGREEMENT\nParties: NEXORA Inc & Apex Cloud Systems\nEffective Date: 2026-10-01\nAnnual Contract Value: ₹12,00,000.00\nTermination Notice: 60 Days"
         elif "Resume" in fname:
             dummy_content += "RESUME - AMIT VERMA\nEmail: amit.verma@email.com\nSkills: Python, FastApi, React, Machine Learning, Docker\nExperience: 5.5 Years\nEducation: B.Tech CS IIT Delhi"
         elif "Loan" in fname:
