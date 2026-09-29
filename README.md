@@ -7,8 +7,8 @@
 <p align="center">AI-powered document intelligence and workflow automation for modern enterprises.</p>
 
 <p align="center">
-  <a href="https://deepflow-ai-cbyu-git-main-imdeepx11.vercel.app"><strong>✨ Live Website</strong></a> •
-  <a href="https://deepflow-ai-2.onrender.com/docs"><strong>🌐 Live API & Swagger Docs</strong></a> •
+  <a href="https://vercel.com/imdeepx11/nexora-ai"><strong>✨ Vercel Project</strong></a> •
+  <a href="https://deepflow-ai-wdv0.onrender.com/docs"><strong>🌐 Live API & Swagger Docs</strong></a> •
   <a href="https://github.com/imdeepx11/Nexora-AI"><strong>📦 GitHub Repository</strong></a>
 </p>
 
@@ -26,9 +26,9 @@
 
 ## 🚀 Live Cloud Deployment Links
 
-- **Frontend Web Application (Vercel)**: [https://deepflow-ai-cbyu-git-main-imdeepx11.vercel.app](https://deepflow-ai-cbyu-git-main-imdeepx11.vercel.app)
-- **Backend API (Render)**: [https://deepflow-ai-2.onrender.com](https://deepflow-ai-2.onrender.com)
-- **FastAPI Interactive Docs**: [https://deepflow-ai-2.onrender.com/docs](https://deepflow-ai-2.onrender.com/docs)
+- **Frontend Web Application (Vercel)**: [Vercel project dashboard](https://vercel.com/imdeepx11/nexora-ai)
+- **Backend API (Render)**: [https://deepflow-ai-wdv0.onrender.com](https://deepflow-ai-wdv0.onrender.com)
+- **FastAPI Interactive Docs**: [https://deepflow-ai-wdv0.onrender.com/docs](https://deepflow-ai-wdv0.onrender.com/docs)
 
 ### 🔑 Instant Demo Account Credentials
 - **Email**: `demo@nexora.ai`
