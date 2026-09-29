@@ -12,6 +12,23 @@ def seed_db():
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
 
+    # Migrate legacy DeepFlow synthetic accounts to NEXORA before seeding/checking.
+    legacy_demo = db.query(User).filter(User.email == "demo@deepflow.ai").first()
+    nexora_demo = db.query(User).filter(User.email == "demo@nexora.ai").first()
+    if legacy_demo and not nexora_demo:
+        legacy_demo.email = "demo@nexora.ai"
+        db.commit()
+
+    for legacy_user in db.query(User).filter(User.email.like("phone_%@deepflow.ai")).all():
+        nexora_email = legacy_user.email.replace("@deepflow.ai", "@nexora.ai")
+        if not db.query(User).filter(User.email == nexora_email).first():
+            legacy_user.email = nexora_email
+    legacy_google = db.query(User).filter(User.email == "google.user@deepflow.ai").first()
+    nexora_google = db.query(User).filter(User.email == "google.user@nexora.ai").first()
+    if legacy_google and not nexora_google:
+        legacy_google.email = "google.user@nexora.ai"
+    db.commit()
+
     # Check if already seeded
     if db.query(Document).count() > 0:
         print("Database already contains data.")
@@ -23,7 +40,7 @@ def seed_db():
     # Create admin user
     user = User(
         name="Demo Administrator",
-        email="demo@deepflow.ai",
+        email="demo@nexora.ai",
         password_hash=hash_password("demo123"),
         role="Admin",
         department="Operations",
@@ -51,7 +68,7 @@ def seed_db():
 
     for idx, (fname, ftype, fsize, uploaded_by, status, priority) in enumerate(sample_docs):
         # Generate dummy text content for analyzer
-        dummy_content = f"DEEPFLOW DEMO DOCUMENT CONTENT\nDocument: {fname}\nType: {ftype}\nUser: {uploaded_by}\n"
+        dummy_content = f"NEXORA DEMO DOCUMENT CONTENT\nDocument: {fname}\nType: {ftype}\nUser: {uploaded_by}\n"
         if "Invoice" in fname:
             dummy_content += "INVOICE # INV-1024\nVendor: ABC Technologies\nGSTIN: 07AAAAA0000A1Z5\nDate: 2026-09-10\nSubtotal: ₹75,000.00\nGST 18%: ₹13,500.00\nTotal Amount: ₹88,500\nDue Date: 30 September 2026\nPayment Terms: Net 15"
         elif "Purchase_Order" in fname:
