@@ -13,7 +13,7 @@ const NAV = [
 
 const CONTACT_EMAIL = 'mrdeepak.g11@gmail.com';
 const CONTACT_PHONE = '9458777101';
-const GMAIL_COMPOSE_URL = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(CONTACT_EMAIL)}&su=DeepFlow%20AI%20Enquiry`;
+const GMAIL_COMPOSE_URL = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(CONTACT_EMAIL)}&su=NEXORA%20AI%20Enquiry`;
 
 export default function Header({ currentPage, setCurrentPage, onOpenUpload, user, onNavigateToAnalyzer, onLogout, darkMode, onToggleDarkMode }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -56,7 +56,7 @@ export default function Header({ currentPage, setCurrentPage, onOpenUpload, user
 
   const userName = user?.name || user?.email?.split('@')[0] || 'Administrator';
   const initials = userName.slice(0, 1).toUpperCase();
-  const currentLabel = NAV.find(([id]) => id === currentPage)?.[1] || 'DeepFlow AI';
+  const currentLabel = NAV.find(([id]) => id === currentPage)?.[1] || 'NEXORA AI';
 
   return (
     <>
@@ -64,7 +64,7 @@ export default function Header({ currentPage, setCurrentPage, onOpenUpload, user
         <button className="sidebar-brand" type="button" onClick={() => setCurrentPage('dashboard')} aria-label="Go to dashboard">
           <span className="brand-mark"><Sparkles size={18} /></span>
           <span className="sidebar-brand-copy">
-            <span className="brand-name">DeepFlow</span>
+            <span className="brand-name">NEXORA</span>
             <span className="brand-subtitle">Intelligent Documents,<br />Smarter Workflows</span>
           </span>
         </button>
@@ -88,7 +88,7 @@ export default function Header({ currentPage, setCurrentPage, onOpenUpload, user
       <header className="editorial-header">
         <div className="editorial-header-inner">
           <div className="topbar-page-context" aria-label="Current page">
-            <span className="topbar-kicker">DeepFlow AI</span>
+            <span className="topbar-kicker">NEXORA AI</span>
             <span className="topbar-current">{currentLabel}</span>
           </div>
 
@@ -133,16 +133,16 @@ export default function Header({ currentPage, setCurrentPage, onOpenUpload, user
       </header>
 
       {contactOpen && (
-        <div className="contact-backdrop" role="dialog" aria-modal="true" aria-label="Contact DeepFlow">
+        <div className="contact-backdrop" role="dialog" aria-modal="true" aria-label="Contact NEXORA">
           <div className="contact-modal">
             <div className="contact-modal-head">
               <div><div className="page-kicker">Contact us</div><h2>Let's talk.</h2></div>
               <button className="modal-close" type="button" onClick={() => setContactOpen(false)} aria-label="Close"><X size={18} /></button>
             </div>
-            <p>For product questions, feedback, partnerships, or support, contact DeepFlow directly by email or phone.</p>
+            <p>For product questions, feedback, partnerships, or support, contact NEXORA directly by email or phone.</p>
             <div className="contact-actions">
-              <a className="contact-action contact-mail-link" href={GMAIL_COMPOSE_URL} target="_blank" rel="noopener noreferrer" title="Open Gmail compose"><Mail size={15} /><span>Email DeepFlow</span></a>
-              <a className="contact-action contact-phone-link" href={`tel:${CONTACT_PHONE}`} title="Call DeepFlow"><Phone size={15} /><span>Call {CONTACT_PHONE}</span></a>
+              <a className="contact-action contact-mail-link" href={GMAIL_COMPOSE_URL} target="_blank" rel="noopener noreferrer" title="Open Gmail compose"><Mail size={15} /><span>Email NEXORA</span></a>
+              <a className="contact-action contact-phone-link" href={`tel:${CONTACT_PHONE}`} title="Call NEXORA"><Phone size={15} /><span>Call {CONTACT_PHONE}</span></a>
             </div>
             <div className="contact-note">Email: <strong>{CONTACT_EMAIL}</strong><br />Phone: <strong>{CONTACT_PHONE}</strong></div>
           </div>
