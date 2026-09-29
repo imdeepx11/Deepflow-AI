@@ -31,7 +31,7 @@
 - **FastAPI Interactive Docs**: [https://deepflow-ai-2.onrender.com/docs](https://deepflow-ai-2.onrender.com/docs)
 
 ### 🔑 Instant Demo Account Credentials
-- **Email**: `demo@deepflow.ai`
+- **Email**: `demo@nexora.ai`
 - **Password**: `demo123`
 
 ---
