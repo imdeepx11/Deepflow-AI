@@ -89,7 +89,7 @@ export default function DocumentAnalyzer({ docId, onNavigateToDocuments }) {
           <article className="action-card paper-card">
             <div className="page-kicker" style={{color:'#42624e'}}>Recommended action</div>
             <h3>{analysis.recommended_action || 'Review'}</h3>
-            <p style={{margin:0,color:'#5e6a60',fontSize:11,lineHeight:1.6}}>{analysis.summary?.[0] || 'DeepFlow has prepared the document for your next workflow decision.'}</p>
+            <p style={{margin:0,color:'#5e6a60',fontSize:11,lineHeight:1.6}}>{analysis.summary?.[0] || 'NEXORA has prepared the document for your next workflow decision.'}</p>
           </article>
 
           <article className="paper-card data-card">

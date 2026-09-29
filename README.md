@@ -1,15 +1,15 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/DeepFlow_AI-Intelligent_Documents-00A859?style=for-the-badge&logo=data:image/svg+xml;base64,..." alt="DeepFlow AI" />
+  <img src="https://img.shields.io/badge/NEXORA_AI-Intelligent_Documents-00A859?style=for-the-badge&logo=data:image/svg+xml;base64,..." alt="NEXORA AI" />
 </p>
 
-<h1 align="center">DeepFlow AI</h1>
+<h1 align="center">NEXORA AI</h1>
 <p align="center"><strong>Intelligent Documents. Smarter Workflows.</strong></p>
 <p align="center">AI-powered document intelligence and workflow automation for modern enterprises.</p>
 
 <p align="center">
-  <a href="https://deepflow-ai-cbyu-git-main-imdeepx11.vercel.app"><strong>✨ Live Website</strong></a> •
-  <a href="https://deepflow-ai-2.onrender.com/docs"><strong>🌐 Live API & Swagger Docs</strong></a> •
-  <a href="https://github.com/imdeepx11/Deepflow-AI"><strong>📦 GitHub Repository</strong></a>
+  <a href="https://nexora-ai-imdeepx11.vercel.app/"><strong>✨ Vercel Project</strong></a> •
+  <a href="https://nexora-backend-30jt.onrender.com/docs"><strong>🌐 Live API & Swagger Docs</strong></a> •
+  <a href="https://github.com/imdeepx11/Nexora-AI"><strong>📦 GitHub Repository</strong></a>
 </p>
 
 <p align="center">
@@ -26,19 +26,19 @@
 
 ## 🚀 Live Cloud Deployment Links
 
-- **Frontend Web Application (Vercel)**: [https://deepflow-ai-cbyu-git-main-imdeepx11.vercel.app](https://deepflow-ai-cbyu-git-main-imdeepx11.vercel.app)
-- **Backend API (Render)**: [https://deepflow-ai-2.onrender.com](https://deepflow-ai-2.onrender.com)
-- **FastAPI Interactive Docs**: [https://deepflow-ai-2.onrender.com/docs](https://deepflow-ai-2.onrender.com/docs)
+- **Frontend Web Application (Vercel)**: [https://nexora-ai-imdeepx11.vercel.app/](https://nexora-ai-imdeepx11.vercel.app/)
+- **Backend API (Render)**: [https://nexora-backend-30jt.onrender.com](https://nexora-backend-30jt.onrender.com)
+- **FastAPI Interactive Docs**: [https://nexora-backend-30jt.onrender.com/docs](https://nexora-backend-30jt.onrender.com/docs)
 
 ### 🔑 Instant Demo Account Credentials
-- **Email**: `demo@deepflow.ai`
+- **Email**: `demo@nexora.ai`
 - **Password**: `demo123`
 
 ---
 
 ## Overview
 
-**DeepFlow AI** is an enterprise-grade web application that demonstrates end-to-end **Intelligent Document Processing (IDP)**, **Business Process Management (BPM)**, and **AI-Assisted Decision Support**.
+**NEXORA AI** is an enterprise-grade web application that demonstrates end-to-end **Intelligent Document Processing (IDP)**, **Business Process Management (BPM)**, and **AI-Assisted Decision Support**.
 
 Upload any business document — invoice, contract, purchase order, or resume — and watch the AI pipeline classify it, extract structured data, assess risk, assign priority, recommend an action, and route it through an automated approval workflow with full audit trail.
 
@@ -99,7 +99,7 @@ Immutable Audit Log & Analytics Dashboard
 ## Project Structure
 
 ```
-DeepFlow-AI/
+NEXORA-AI/
 ├── main.py                  # Root entry point — starts the backend
 ├── requirements.txt         # Python dependencies
 ├── render.yaml              # Render zero-config blueprint
@@ -141,8 +141,8 @@ DeepFlow-AI/
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/imdeepx11/Deepflow-AI.git
-cd Deepflow-AI
+git clone https://github.com/imdeepx11/Nexora-AI.git
+cd Nexora-AI
 ```
 
 ### 2. Set up the backend
@@ -203,7 +203,7 @@ Open **http://localhost:5173** in your browser.
 
 ## License
 
-MIT License — DeepFlow AI © 2026
+MIT License — NEXORA AI © 2026
 
 ---
 

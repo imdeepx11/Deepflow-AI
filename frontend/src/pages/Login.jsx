@@ -87,7 +87,7 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
   const demo = async () => {
     setEmail('demo@deepflow.ai'); setPassword('demo123'); setError(''); setLoading(true);
     try {
-      const res = await api.login({ email: 'demo@deepflow.ai', password: 'demo123' });
+      const res = await api.login({ email: 'demo@nexora.ai', password: 'demo123' });
       onLoginSuccess(res.user);
     } catch (err) {
       setError(err.message || 'Demo sign in failed');
@@ -145,10 +145,10 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
       <div className="login-shell premium-login-shell">
         <section className="login-editorial">
           <div className="login-topline">
-            <button className="brand-block login-brand" type="button" aria-label="DeepFlow AI">
+            <button className="brand-block login-brand" type="button" aria-label="NEXORA AI">
               <span className="brand-mark"><Sparkles size={18} /></span>
               <span className="brand-copy">
-                <span className="brand-name">DeepFlow</span>
+                <span className="brand-name">NEXORA</span>
                 <span className="brand-subtitle">Intelligent Documents,<br />Smarter Workflows</span>
               </span>
             </button>

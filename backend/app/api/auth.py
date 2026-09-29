@@ -174,7 +174,7 @@ def phone_login(req: PhoneLoginRequest, request: Request, db: Session = Depends(
 
 @router.post("/google")
 def google_login(req: GoogleLoginRequest, request: Request, db: Session = Depends(get_db)):
-    email_clean = (req.email or "google.user@deepflow.ai").strip().lower()
+    email_clean = (req.email or "google.user@nexora.ai").strip().lower()
     user = db.query(User).filter(User.email == email_clean).first()
     if not user:
         user = User(name=req.name or name_from_email(email_clean), email=email_clean, role="User", department="Operations")
@@ -282,7 +282,7 @@ def me(user_id: int = None, db: Session = Depends(get_db)):
     if not user:
         user = db.query(User).first()
     if not user:
-        user = User(name="Demo Administrator", email="demo@deepflow.ai", role="Admin", department="Operations")
+        user = User(name="Demo Administrator", email="demo@nexora.ai", role="Admin", department="Operations")
         db.add(user)
         db.commit()
         db.refresh(user)

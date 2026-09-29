@@ -1,4 +1,4 @@
-/* DeepFlow contact modal: aligned actions and reliable contact links */
+/* NEXORA contact modal: aligned actions and reliable contact links */
 .contact-actions {
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;

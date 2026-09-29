@@ -31,7 +31,7 @@ except Exception as exc:
 
 
 app = FastAPI(
-    title="DeepFlow AI Backend API",
+    title="NEXORA AI Backend API",
     description="Enterprise Document Processing & Intelligent Workflow Automation Platform",
     version="1.1.0",
 )
@@ -60,7 +60,7 @@ app.include_router(settings.router)
 @app.get("/")
 def root():
     return {
-        "name": "DeepFlow AI API",
+        "name": "NEXORA AI API",
         "status": "online",
         "version": "1.1.0",
         "database": "SQLite / Relational DB",

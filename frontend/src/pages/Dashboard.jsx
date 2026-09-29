@@ -147,7 +147,7 @@ export default function Dashboard({ user, onNavigateToAnalyzer, onNavigateToDocu
 
       <section className="ledger-table-panel">
         <div className="section-row">
-          <div><h2 className="card-title">Recent Ingested Documents</h2><p className="card-subtitle">The latest files moving through DeepFlow AI.</p></div>
+          <div><h2 className="card-title">Recent Ingested Documents</h2><p className="card-subtitle">The latest files moving through NEXORA AI.</p></div>
           <button className="section-link" onClick={onNavigateToDocuments}>View all <ArrowRight size={12} /></button>
         </div>
         <div className="table-wrap">
@@ -183,9 +183,9 @@ export default function Dashboard({ user, onNavigateToAnalyzer, onNavigateToDocu
           </div>
         </article>
         <article className="ledger-note-card ledger-quote">
-          <div className="page-kicker">DeepFlow / editorial note</div>
+          <div className="page-kicker">NEXORA / editorial note</div>
           <blockquote>“Technology should feel human — clear enough to trust, powerful enough to matter.”</blockquote>
-          <span>DeepFlow AI</span>
+          <span>NEXORA AI</span>
         </article>
       </section>
     </div>

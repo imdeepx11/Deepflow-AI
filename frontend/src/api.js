@@ -1,5 +1,5 @@
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
-  || (import.meta.env.DEV ? '/api' : 'https://deepflow-ai-2.onrender.com/api');
+  || (import.meta.env.DEV ? '/api' : 'https://nexora-backend-30jt.onrender.com/api');
 
 
 export async function fetchApi(endpoint, options = {}, retryCount = 0) {
