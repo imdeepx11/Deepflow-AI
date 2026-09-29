@@ -428,7 +428,7 @@ def phone_login(req: PhoneLoginRequest, request: Request, db: Session = Depends(
     if not user:
         display_name = req.name.strip() if req.name and req.name.strip() else f"User {phone_clean[-4:]}"
         sanitized_phone = re.sub(r"[^\d]", "", phone_clean)
-        synthetic_email = f"phone_{sanitized_phone}@deepflow.ai"
+        synthetic_email = f"phone_{sanitized_phone}@nexora.ai"
         user = User(
             name=display_name,
             email=synthetic_email,
@@ -470,7 +470,7 @@ def phone_login(req: PhoneLoginRequest, request: Request, db: Session = Depends(
 
 @router.post("/google")
 def google_login(req: GoogleLoginRequest, request: Request, db: Session = Depends(get_db)):
-    email_clean = (req.email or "google.user@deepflow.ai").strip().lower()
+    email_clean = (req.email or "google.user@nexora.ai").strip().lower()
     user = db.query(User).filter(User.email == email_clean).first()
 
     if not user:
@@ -643,13 +643,13 @@ def me(user_id: int = None, db: Session = Depends(get_db)):
     if user_id:
         user = db.query(User).filter(User.id == user_id).first()
     else:
-        user = db.query(User).filter(User.email == "demo@deepflow.ai").first()
+        user = db.query(User).filter(User.email == "demo@nexora.ai").first()
     
     if not user:
         user = db.query(User).first()
     
     if not user:
-        user = User(name="Demo Administrator", email="demo@deepflow.ai", role="Admin", department="Operations")
+        user = User(name="Demo Administrator", email="demo@nexora.ai", role="Admin", department="Operations")
         db.add(user)
         db.commit()
         db.refresh(user)
