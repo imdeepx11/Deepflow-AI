@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://nexora-ai-imdeepx11.vercel.app/"><strong>✨ Vercel Project</strong></a> •
-  <a href="https://deepflow-ai-wdv0.onrender.com/docs"><strong>🌐 Live API & Swagger Docs</strong></a> •
+  <a href="https://nexora-backend-30jt.onrender.com/docs"><strong>🌐 Live API & Swagger Docs</strong></a> •
   <a href="https://github.com/imdeepx11/Nexora-AI"><strong>📦 GitHub Repository</strong></a>
 </p>
 
@@ -27,8 +27,8 @@
 ## 🚀 Live Cloud Deployment Links
 
 - **Frontend Web Application (Vercel)**: [https://nexora-ai-imdeepx11.vercel.app/](https://nexora-ai-imdeepx11.vercel.app/)
-- **Backend API (Render)**: [https://deepflow-ai-wdv0.onrender.com](https://deepflow-ai-wdv0.onrender.com)
-- **FastAPI Interactive Docs**: [https://deepflow-ai-wdv0.onrender.com/docs](https://deepflow-ai-wdv0.onrender.com/docs)
+- **Backend API (Render)**: [https://nexora-backend-30jt.onrender.com](https://nexora-backend-30jt.onrender.com)
+- **FastAPI Interactive Docs**: [https://nexora-backend-30jt.onrender.com/docs](https://nexora-backend-30jt.onrender.com/docs)
 
 ### 🔑 Instant Demo Account Credentials
 - **Email**: `demo@nexora.ai`
