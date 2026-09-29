@@ -270,7 +270,7 @@ class AIService:
             confidence = 0.97
             fields = {
                 "PO Number": "PO-2026-9041",
-                "Buyer Company": "DeepFlow Enterprise Solutions",
+                "Buyer Company": "NEXORA Enterprise Solutions",
                 "Supplier": "Global Hardware Vendors Ltd",
                 "PO Date": "2026-09-12",
                 "Delivery Date": "2026-09-30",
