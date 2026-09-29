@@ -176,12 +176,12 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
   };
 
   const demo = async () => {
-    setEmail('demo@deepflow.ai');
+    setEmail('demo@nexora.ai');
     setPassword('demo123');
     setError('');
     setLoading(true);
     try {
-      const res = await api.login({ email: 'demo@deepflow.ai', password: 'demo123' });
+      const res = await api.login({ email: 'demo@nexora.ai', password: 'demo123' });
       onLoginSuccess(res.user);
     } catch (err) {
       setError(err.message || 'Demo sign in failed');
