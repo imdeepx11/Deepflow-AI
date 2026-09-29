@@ -251,10 +251,10 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
       <div className="login-shell premium-login-shell">
         <section className="login-editorial">
           <div className="login-topline">
-            <button className="brand-block login-brand" type="button" aria-label="DeepFlow AI">
+            <button className="brand-block login-brand" type="button" aria-label="NEXORA AI">
               <span className="brand-mark"><Sparkles size={18} /></span>
               <span className="brand-copy">
-                <span className="brand-name">DeepFlow</span>
+                <span className="brand-name">NEXORA</span>
                 <span className="brand-subtitle">Intelligent Documents,<br />Smarter Workflows</span>
               </span>
             </button>
