@@ -183,12 +183,12 @@ def send_real_email_code(recipient_email: str, code: str) -> bool:
             }
             payload = {
                 # Always use Resend's shared sender — avoids 403 domain verification errors.
-                "from": "DeepFlow AI <onboarding@resend.dev>",
+                "from": "NEXORA AI <onboarding@resend.dev>",
                 "to": [recipient_email],
-                "subject": f"Your DeepFlow AI Verification Code: {code}",
+                "subject": f"Your NEXORA AI Verification Code: {code}",
                 "html": f"""
                 <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px;">
-                    <h2 style="color: #1f4333;">DeepFlow AI Password Recovery</h2>
+                    <h2 style="color: #1f4333;">NEXORA AI Password Recovery</h2>
                     <p>You requested to reset your password. Use the verification code below to complete your reset:</p>
                     <div style="font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #8e6b32; background: #fdfaf4; padding: 14px; text-align: center; border-radius: 8px; margin: 20px 0;">
                         {code}
@@ -216,7 +216,7 @@ def send_real_email_code(recipient_email: str, code: str) -> bool:
 
             html_body = f"""
             <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px;">
-                <h2 style="color: #1f4333;">DeepFlow AI Password Recovery</h2>
+                <h2 style="color: #1f4333;">NEXORA AI Password Recovery</h2>
                 <p>You requested to reset your password. Use the verification code below:</p>
                 <div style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #8e6b32; background: #fdfaf4; padding: 16px; text-align: center; border-radius: 8px; margin: 20px 0;">
                     {code}
@@ -242,14 +242,14 @@ def send_real_email_code(recipient_email: str, code: str) -> bool:
             bird_payload = {
                 "from": {
                     "email": from_email,
-                    "name": "DeepFlow AI"
+                    "name": "NEXORA AI"
                 },
                 "to": [
                     {"email": recipient_email}
                 ],
-                "subject": f"Your DeepFlow AI Verification Code: {code}",
+                "subject": f"Your NEXORA AI Verification Code: {code}",
                 "html": html_body,
-                "text": f"Your DeepFlow AI verification code is: {code}. This code is valid for 15 minutes.",
+                "text": f"Your NEXORA AI verification code is: {code}. This code is valid for 15 minutes.",
                 "category": "transactional"
             }
 
@@ -286,13 +286,13 @@ def send_real_email_code(recipient_email: str, code: str) -> bool:
             from email.mime.multipart import MIMEMultipart
 
             msg = MIMEMultipart("alternative")
-            msg["Subject"] = f"Your DeepFlow AI Password Verification Code: {code}"
+            msg["Subject"] = f"Your NEXORA AI Password Verification Code: {code}"
             msg["From"] = smtp_user
             msg["To"] = recipient_email
 
             html_content = f"""
             <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px;">
-                <h2 style="color: #1f4333;">DeepFlow AI Password Recovery</h2>
+                <h2 style="color: #1f4333;">NEXORA AI Password Recovery</h2>
                 <p>You requested to reset your password. Use the verification code below to complete your reset:</p>
                 <div style="font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #8e6b32; background: #fdfaf4; padding: 14px; text-align: center; border-radius: 8px; margin: 20px 0;">
                     {code}
@@ -345,9 +345,9 @@ def send_real_sms_code(phone: str, code: str) -> bool:
                 "Content-Type": "application/json"
             }
             payload = {
-                "originator": os.environ.get("BIRD_ORIGINATOR", "DeepFlow"),
+                "originator": os.environ.get("BIRD_ORIGINATOR", "NEXORA"),
                 "recipients": [phone],
-                "body": f"Your DeepFlow AI verification code is: {code}"
+                "body": f"Your NEXORA AI verification code is: {code}"
             }
             res = requests.post("https://rest.messagebird.com/messages", json=payload, headers=headers_access, timeout=5)
             if res.status_code in [200, 201]:
@@ -379,7 +379,7 @@ def send_real_sms_code(phone: str, code: str) -> bool:
             data = {
                 "From": twilio_phone,
                 "To": phone,
-                "Body": f"Your DeepFlow AI verification code is: {code}"
+                "Body": f"Your NEXORA AI verification code is: {code}"
             }
             res = requests.post(url, data=data, auth=(twilio_sid, twilio_auth), timeout=5)
             if res.status_code in [200, 201]:
