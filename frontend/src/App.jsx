@@ -79,7 +79,7 @@ export default function App() {
   return (
     <div className="editorial-app">
       <Header
-        pageTitle={PAGE_TITLES[currentPage] || 'DeepFlow AI'}
+        pageTitle={PAGE_TITLES[currentPage] || 'NEXORA AI'}
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
         onOpenUpload={() => setUploadModalOpen(true)}
