@@ -29,11 +29,12 @@ const PAGE_TITLES = {
   settings: 'Settings'
 };
 
-const SESSION_USER_KEY = 'deepflow_user_session';
+const SESSION_USER_KEY = 'nexora_user_session';
 
 export default function App() {
   const [user, setUser] = useState(() => {
     try {
+      localStorage.removeItem('nexora_user');
       localStorage.removeItem('deepflow_user');
       return JSON.parse(sessionStorage.getItem(SESSION_USER_KEY) || 'null');
     } catch {
@@ -43,14 +44,14 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedDocId, setSelectedDocId] = useState(null);
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('deepflow_theme') === 'dark');
+  const [darkMode, setDarkMode] = useState(() => (localStorage.getItem('nexora_theme') || localStorage.getItem('deepflow_theme')) === 'dark');
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
     document.body.classList.toggle('dark-mode', darkMode);
-    document.body.classList.add('deepflow-editorial');
-    localStorage.setItem('deepflow_theme', darkMode ? 'dark' : 'light');
-    return () => document.body.classList.remove('deepflow-editorial');
+    document.body.classList.add('nexora-editorial');
+    localStorage.setItem('nexora_theme', darkMode ? 'dark' : 'light');
+    return () => document.body.classList.remove('nexora-editorial');
   }, [darkMode]);
 
   const handleLoginSuccess = (userData) => {
