@@ -157,7 +157,7 @@
 
   .topbar-current {
     color: var(--ink);
-    font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
+    font-family: 'Eurostile', 'Eurostile Extended', 'Microgramma', 'Square 721', 'Exo 2', 'Orbitron', 'Rajdhani', sans-serif;
     font-size: 24px;
     line-height: 1;
   }

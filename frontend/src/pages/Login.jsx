@@ -1,100 +1,67 @@
-import React, { useState } from 'react';
-import { ArrowRight, CheckCircle2, KeyRound, Lock, Mail, Moon, Sparkles, Sun, X, Loader2, Phone, User as UserIcon } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowRight, CheckCircle2, Lock, Mail, Moon, Sparkles, Sun, User as UserIcon } from 'lucide-react';
 import { api } from '../api';
 import { isGoogleAuthConfigured, signInWithGoogle } from '../firebase-client';
+import GoogleMark from '../components/GoogleMark';
+import PasswordRecoveryModal from '../components/PasswordRecoveryModal';
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-function GoogleMark() {
-  return (
-    <svg className="google-mark" viewBox="0 0 24 24" aria-hidden="true">
-      <path fill="#4285F4" d="M21.35 12.27c0-.67-.06-1.3-.18-1.91H12v3.61h5.24a4.47 4.47 0 0 1-1.94 2.94v2.44h3.14c1.84-1.69 2.91-4.19 2.91-7.08Z" />
-      <path fill="#34A853" d="M12 21.6c2.63 0 4.84-.87 6.45-2.35l-3.14-2.44c-.87.58-1.98.93-3.31.93-2.55 0-4.71-1.72-5.49-4.03H3.27v2.52A9.73 9.73 0 0 0 12 21.6Z" />
-      <path fill="#FBBC05" d="M6.51 13.71A5.85 5.85 0 0 1 6.2 12c0-.59.11-1.16.31-1.71V7.77H3.27A9.6 9.6 0 0 0 2.4 12c0 1.53.37 2.98.87 4.23l3.24-2.52Z" />
-      <path fill="#EA4335" d="M12 6.26c1.43 0 2.71.49 3.72 1.45l2.79-2.79C16.83 3.39 14.62 2.4 12 2.4a9.73 9.73 0 0 0-8.73 5.37l3.24 2.52C7.29 7.98 9.45 6.26 12 6.26Z" />
-    </svg>
-  );
-}
-
 export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
-  // Mode state: 'signin' | 'signup'
   const [authMode, setAuthMode] = useState('signin');
-  // Method state: 'email' | 'phone'
-  const [method, setMethod] = useState('email');
 
-  // Email form state
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  // Phone form state
-  const [phone, setPhone] = useState('');
-  const [phoneCode, setPhoneCode] = useState('');
-  const [phoneCodeSent, setPhoneCodeSent] = useState(false);
-  const [phoneCodeMsg, setPhoneCodeMsg] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Password Recovery Modal state
+  // Password Recovery state
   const [recoveryOpen, setRecoveryOpen] = useState(false);
   const [recoveryEmail, setRecoveryEmail] = useState('');
-  const [recoveryStep, setRecoveryStep] = useState(1); // 1: Email, 2: Code & New Password, 3: Success
+  const [recoveryStep, setRecoveryStep] = useState(1);
   const [recoveryCode, setRecoveryCode] = useState('');
+  const [recoveryToken, setRecoveryToken] = useState('');
+  const [generatedResetLink, setGeneratedResetLink] = useState('');
+  const [emailSent, setEmailSent] = useState(true);
   const [newPassword, setNewPassword] = useState('');
   const [recoveryLoading, setRecoveryLoading] = useState(false);
   const [recoveryError, setRecoveryError] = useState('');
   const [recoverySuccess, setRecoverySuccess] = useState('');
 
-  const switchMode = (newMode) => {
-    setAuthMode(newMode);
-    setError('');
-    setPhoneCodeSent(false);
-    setPhoneCodeMsg('');
-  };
-
-  const switchMethod = (newMethod) => {
-    setMethod(newMethod);
-    setError('');
-    setPhoneCodeSent(false);
-    setPhoneCodeMsg('');
-  };
-
-  // Submit handler for Email Sign In / Sign Up
-  const handleSubmitEmail = async (event) => {
-    event.preventDefault();
-    setError('');
-
-    const normalizedEmail = email.trim().toLowerCase();
-
-    if (!EMAIL_REGEX.test(normalizedEmail)) {
-      setError('Please enter a valid email address (e.g. name@example.com).');
-      return;
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tokenParam = params.get('reset_token');
+    if (tokenParam) {
+      setRecoveryToken(tokenParam);
+      setRecoveryOpen(true);
+      setRecoveryStep(2);
+      window.history.replaceState({}, document.title, window.location.pathname);
+      api.verifyResetToken(tokenParam)
+        .then((res) => { if (res.email) setRecoveryEmail(res.email); })
+        .catch((err) => setRecoveryError(err.message || 'Password reset link is invalid or expired.'));
     }
-    if (password.length < 6) {
-      setError('Password must contain at least 6 characters.');
-      return;
-    }
+  }, []);
 
-    if (authMode === 'signup' && (!name || !name.trim())) {
-      setError('Please enter your full name.');
-      return;
-    }
+  const resetState = () => { setError(''); };
+  const switchMode = (m) => { setAuthMode(m); resetState(); };
+
+  const handleSubmitEmail = async (e) => {
+    e.preventDefault();
+    setError('');
+    const norm = email.trim().toLowerCase();
+    if (!EMAIL_REGEX.test(norm)) return setError('Please enter a valid email address.');
+    if (password.length < 6) return setError('Password must contain at least 6 characters.');
+    if (authMode === 'signup' && !name.trim()) return setError('Please enter your full name.');
 
     setLoading(true);
     try {
-      if (authMode === 'signup') {
-        const res = await api.register({
-          name: name.trim(),
-          email: normalizedEmail,
-          password,
-        });
-        onLoginSuccess(res.user);
-      } else {
-        const res = await api.login({ email: normalizedEmail, password });
-        onLoginSuccess(res.user);
-      }
+      const res = authMode === 'signup'
+        ? await api.register({ name: name.trim(), email: norm, password })
+        : await api.login({ email: norm, password });
+      onLoginSuccess(res.user);
     } catch (err) {
       setError(err.message || (authMode === 'signup' ? 'Registration failed' : 'Sign in failed'));
     } finally {
@@ -102,67 +69,9 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
     }
   };
 
-  // Handler to request Phone SMS verification code
-  const handleSendPhoneCode = async () => {
-    setError('');
-    const cleanPhone = phone.trim();
-    if (!cleanPhone || cleanPhone.length < 7) {
-      setError('Please enter a valid phone number (e.g., +1 234 567 8900).');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await api.sendPhoneCode(cleanPhone);
-      setPhoneCodeSent(true);
-      setPhoneCodeMsg(res.message || `Verification code sent to ${cleanPhone}. Please check your SMS.`);
-      setPhoneCode('');
-    } catch (err) {
-      setError(err.message || 'Could not send verification code. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Submit handler for Phone Authentication
-  const handleSubmitPhone = async (event) => {
-    event.preventDefault();
-    setError('');
-
-    const cleanPhone = phone.trim();
-    if (!cleanPhone || cleanPhone.length < 7) {
-      setError('Please enter a valid phone number.');
-      return;
-    }
-
-    if (!phoneCode || phoneCode.trim().length !== 6) {
-      setError('Please enter the 6-digit verification code sent to your phone.');
-      return;
-    }
-
-    if (authMode === 'signup' && (!name || !name.trim())) {
-      setError('Please enter your full name.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await api.phoneLogin(cleanPhone, phoneCode.trim(), authMode === 'signup' ? name.trim() : undefined);
-      onLoginSuccess(res.user);
-    } catch (err) {
-      setError(err.message || 'Phone sign-in failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const googleLogin = async () => {
     setError('');
-    if (!isGoogleAuthConfigured()) {
-      setError('Google sign-in is not connected yet. Firebase web app settings are required in Vercel.');
-      return;
-    }
-
+    if (!isGoogleAuthConfigured()) return setError('Google sign-in is not connected yet.');
     setGoogleLoading(true);
     try {
       const result = await signInWithGoogle();
@@ -176,10 +85,7 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
   };
 
   const demo = async () => {
-    setEmail('demo@deepflow.ai');
-    setPassword('demo123');
-    setError('');
-    setLoading(true);
+    setEmail('demo@deepflow.ai'); setPassword('demo123'); setError(''); setLoading(true);
     try {
       const res = await api.login({ email: 'demo@deepflow.ai', password: 'demo123' });
       onLoginSuccess(res.user);
@@ -191,52 +97,40 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
   };
 
   const handleOpenRecovery = () => {
-    setRecoveryEmail(email || '');
-    setRecoveryStep(1);
-    setRecoveryCode('');
-    setNewPassword('');
-    setRecoveryError('');
-    setRecoverySuccess('');
+    setRecoveryEmail(email || ''); setRecoveryStep(1); setRecoveryCode(''); setRecoveryToken('');
+    setGeneratedResetLink(''); setEmailSent(true); setNewPassword(''); setRecoveryError(''); setRecoverySuccess('');
     setRecoveryOpen(true);
   };
 
   const handleRequestCode = async (e) => {
-    e.preventDefault();
-    setRecoveryError('');
+    e.preventDefault(); setRecoveryError('');
     const norm = recoveryEmail.trim().toLowerCase();
-    if (!EMAIL_REGEX.test(norm)) {
-      setRecoveryError('Please enter a valid email address.');
-      return;
-    }
+    if (!EMAIL_REGEX.test(norm)) return setRecoveryError('Please enter a valid email address.');
     setRecoveryLoading(true);
     try {
       const res = await api.forgotPassword(norm);
-      setRecoveryStep(2);
-      setRecoveryCode('');
-      setRecoverySuccess(res.message || `A 6-digit verification code has been sent to ${norm}. Please check your inbox and spam folder.`);
+      setRecoveryStep(2); setRecoveryCode(''); setRecoveryToken(res.reset_token || '');
+      setGeneratedResetLink(res.reset_link || ''); setEmailSent(res.email_sent !== false);
+      setRecoverySuccess(res.message || `Password reset link generated for ${norm}.`);
     } catch (err) {
-      setRecoveryError(err.message || 'Could not send verification code. Please try again.');
+      setRecoveryError(err.message || 'Could not send verification code.');
     } finally {
       setRecoveryLoading(false);
     }
   };
 
   const handleResetPassword = async (e) => {
-    e.preventDefault();
-    setRecoveryError('');
-    if (!recoveryCode || recoveryCode.trim().length !== 6) {
-      setRecoveryError('Please enter a 6-digit verification code.');
-      return;
-    }
-    if (!newPassword || newPassword.length < 6) {
-      setRecoveryError('New password must contain at least 6 characters.');
-      return;
-    }
+    e.preventDefault(); setRecoveryError('');
+    if (!newPassword || newPassword.length < 6) return setRecoveryError('Password must contain at least 6 characters.');
+    if (!recoveryToken && (!recoveryCode || recoveryCode.trim().length !== 6)) return setRecoveryError('Please enter a 6-digit verification code.');
     setRecoveryLoading(true);
     try {
-      await api.resetPassword(recoveryEmail.trim().toLowerCase(), recoveryCode.trim(), newPassword);
-      setRecoveryStep(3);
-      setRecoverySuccess('Password reset successfully! You can now sign in with your new password.');
+      if (recoveryToken) {
+        await api.resetPasswordWithToken(recoveryToken, newPassword);
+      } else {
+        await api.resetPassword(recoveryEmail.trim().toLowerCase(), recoveryCode.trim(), newPassword);
+      }
+      setRecoveryStep(3); setRecoverySuccess('Password reset successfully!');
     } catch (err) {
       setRecoveryError(err.message || 'Password reset failed.');
     } finally {
@@ -258,7 +152,7 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
                 <span className="brand-subtitle">Intelligent Documents,<br />Smarter Workflows</span>
               </span>
             </button>
-            <button className="header-icon-btn login-theme-button" type="button" onClick={onToggleDarkMode} aria-label="Toggle dark mode" title="Toggle dark mode">
+            <button className="header-icon-btn login-theme-button" type="button" onClick={onToggleDarkMode} aria-label="Toggle dark mode">
               {darkMode ? <Sun size={15} /> : <Moon size={15} />}
             </button>
           </div>
@@ -279,222 +173,55 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
 
         <section className="login-side premium-login-side">
           <div className="login-form-shell">
-            <div className="page-kicker">
-              {authMode === 'signin' ? 'WELCOME BACK' : 'CREATE AN ACCOUNT'}
-            </div>
+            <div className="page-kicker">{authMode === 'signin' ? 'WELCOME BACK' : 'CREATE AN ACCOUNT'}</div>
             <h2>{authMode === 'signin' ? 'Sign in.' : 'Register.'}</h2>
-            <p>
-              {authMode === 'signin'
-                ? 'Use your email, phone number, or continue with Google.'
-                : 'Create your account to start managing document workflows.'}
-            </p>
-
-            {/* Method Tabs: Email vs Phone */}
-            <div className="login-methods-bar">
-              <button
-                type="button"
-                className={`login-method-tab ${method === 'email' ? 'active' : ''}`}
-                onClick={() => switchMethod('email')}
-              >
-                <Mail size={14} /> Email
-              </button>
-              <button
-                type="button"
-                className={`login-method-tab ${method === 'phone' ? 'active' : ''}`}
-                onClick={() => switchMethod('phone')}
-              >
-                <Phone size={14} /> Phone Number
-              </button>
-            </div>
+            <p>{authMode === 'signin' ? 'Use your email or continue with Google.' : 'Create your account to start managing document workflows.'}</p>
 
             {error && <div className="login-error" role="alert">{error}</div>}
 
-            {/* EMAIL METHOD */}
-            {method === 'email' && (
-              <>
-                <button className="google-login" type="button" onClick={googleLogin} disabled={busy}>
-                  <GoogleMark />
-                  <span>{googleLoading ? 'Connecting to Google…' : 'Continue with Google'}</span>
-                </button>
+            <button className="google-login" type="button" onClick={googleLogin} disabled={busy}>
+              <GoogleMark />
+              <span>{googleLoading ? 'Connecting to Google…' : 'Continue with Google'}</span>
+            </button>
 
-                <div className="login-divider">
-                  <span>{authMode === 'signin' ? 'or continue with email' : 'or sign up with email'}</span>
-                </div>
+            <div className="login-divider">
+              <span>{authMode === 'signin' ? 'or continue with email' : 'or sign up with email'}</span>
+            </div>
 
-                <form className="login-form" onSubmit={handleSubmitEmail} noValidate>
-                  {authMode === 'signup' && (
-                    <label>
-                      <span className="login-label">Full Name</span>
-                      <div className="login-field">
-                        <UserIcon size={15} />
-                        <input
-                          type="text"
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          placeholder="Deepak Gupta"
-                          required
-                        />
-                      </div>
-                    </label>
-                  )}
-
-                  <label>
-                    <span className="login-label">Email address</span>
-                    <div className="login-field">
-                      <Mail size={15} />
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="name@example.com"
-                        autoComplete="email"
-                        required
-                      />
-                    </div>
-                  </label>
-
-                  <label>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                      <span className="login-label" style={{ marginBottom: 0 }}>Password</span>
-                      {authMode === 'signin' && (
-                        <button
-                          type="button"
-                          onClick={handleOpenRecovery}
-                          style={{ background: 'none', border: 'none', color: '#8e6b32', fontSize: 11, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
-                        >
-                          Forgot password?
-                        </button>
-                      )}
-                    </div>
-                    <div className="login-field">
-                      <Lock size={15} />
-                      <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="At least 6 characters"
-                        autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'}
-                        minLength={6}
-                        required
-                      />
-                    </div>
-                  </label>
-
-                  <button className="primary-btn login-submit" type="submit" disabled={busy}>
-                    <span>
-                      {loading
-                        ? (authMode === 'signin' ? 'Signing in…' : 'Creating account…')
-                        : (authMode === 'signin' ? 'Sign in' : 'Create Account')}
-                    </span>
-                    <ArrowRight size={14} />
-                  </button>
-                </form>
-              </>
-            )}
-
-            {/* PHONE METHOD */}
-            {method === 'phone' && (
-              <form className="login-form" onSubmit={handleSubmitPhone} style={{ marginTop: 12 }}>
-                {authMode === 'signup' && (
-                  <label>
-                    <span className="login-label">Full Name</span>
-                    <div className="login-field">
-                      <UserIcon size={15} />
-                      <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="Deepak Gupta"
-                        required
-                      />
-                    </div>
-                  </label>
-                )}
-
+            <form className="login-form" onSubmit={handleSubmitEmail} noValidate>
+              {authMode === 'signup' && (
                 <label>
-                  <span className="login-label">Phone Number</span>
-                  <div className="login-field">
-                    <Phone size={15} />
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+1 234 567 8900"
-                      required
-                    />
-                  </div>
+                  <span className="login-label">Full Name</span>
+                  <div className="login-field"><UserIcon size={15} /><input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Deepak Gupta" required /></div>
                 </label>
-
-                {!phoneCodeSent ? (
-                  <button
-                    className="primary-btn login-submit"
-                    type="button"
-                    onClick={handleSendPhoneCode}
-                    disabled={busy}
-                  >
-                    <span>{loading ? 'Sending code…' : 'Send Verification Code'}</span>
-                    <ArrowRight size={14} />
-                  </button>
-                ) : (
-                  <>
-                    {phoneCodeMsg && (
-                      <div style={{ padding: '9px 12px', borderRadius: 10, background: '#eef8f2', border: '1px solid #c8e8d4', color: '#1f6b43', fontSize: 11, fontWeight: 600 }}>
-                        {phoneCodeMsg}
-                      </div>
-                    )}
-
-                    <label style={{ marginTop: 8 }}>
-                      <span className="login-label">6-Digit Verification Code</span>
-                      <div className="login-field">
-                        <KeyRound size={15} />
-                        <input
-                          type="text"
-                          maxLength={6}
-                          value={phoneCode}
-                          onChange={(e) => setPhoneCode(e.target.value)}
-                          placeholder="Enter SMS code"
-                          required
-                        />
-                      </div>
-                    </label>
-
-                    <button className="primary-btn login-submit" type="submit" disabled={busy}>
-                      <span>
-                        {loading
-                          ? 'Verifying…'
-                          : (authMode === 'signin' ? 'Verify & Sign in' : 'Verify & Create Account')}
-                      </span>
-                      <ArrowRight size={14} />
+              )}
+              <label>
+                <span className="login-label">Email address</span>
+                <div className="login-field"><Mail size={15} /><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" autoComplete="email" required /></div>
+              </label>
+              <label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <span className="login-label" style={{ marginBottom: 0 }}>Password</span>
+                  {authMode === 'signin' && (
+                    <button type="button" onClick={handleOpenRecovery} style={{ background: 'none', border: 'none', color: '#8e6b32', fontSize: 11, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>
+                      Forgot password?
                     </button>
+                  )}
+                </div>
+                <div className="login-field"><Lock size={15} /><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'} minLength={6} required /></div>
+              </label>
 
-                    <button
-                      type="button"
-                      onClick={handleSendPhoneCode}
-                      style={{ background: 'none', border: 'none', color: '#8e6b32', fontSize: 11, fontWeight: 600, cursor: 'pointer', textAlign: 'center', marginTop: 4 }}
-                    >
-                      Resend SMS Code
-                    </button>
-                  </>
-                )}
-              </form>
-            )}
+              <button className="primary-btn login-submit" type="submit" disabled={busy}>
+                <span>{loading ? (authMode === 'signin' ? 'Signing in…' : 'Creating account…') : (authMode === 'signin' ? 'Sign in' : 'Create Account')}</span>
+                <ArrowRight size={14} />
+              </button>
+            </form>
 
-            {/* Toggle Footer: Sign In vs Create Account */}
             <div className="login-toggle-footer">
               {authMode === 'signin' ? (
-                <>
-                  Don't have an account?
-                  <button type="button" onClick={() => switchMode('signup')}>
-                    Create Account
-                  </button>
-                </>
+                <>Don't have an account? <button type="button" onClick={() => switchMode('signup')}>Create Account</button></>
               ) : (
-                <>
-                  Already have an account?
-                  <button type="button" onClick={() => switchMode('signin')}>
-                    Sign in
-                  </button>
-                </>
+                <>Already have an account? <button type="button" onClick={() => switchMode('signin')}>Sign in</button></>
               )}
             </div>
 
@@ -505,132 +232,27 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
         </section>
       </div>
 
-      {/* Password Recovery Modal */}
-      {recoveryOpen && (
-        <div className="editorial-modal-backdrop" role="presentation">
-          <div className="editorial-modal" style={{ maxWidth: 440, borderRadius: 20, padding: '28px 28px 24px' }} role="dialog" aria-modal="true">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-              <div>
-                <div className="page-kicker" style={{ color: '#a9814c', letterSpacing: '0.08em', fontWeight: 700 }}>PASSWORD RECOVERY</div>
-                <h2 style={{ fontSize: 24, fontFamily: 'Playfair Display, Georgia, serif', margin: '4px 0 6px', color: '#1d2233' }}>
-                  {recoveryStep === 3 ? 'Password reset!' : 'Forgot your password?'}
-                </h2>
-              </div>
-              <button className="close-btn" type="button" onClick={() => setRecoveryOpen(false)} aria-label="Close modal">
-                <X size={18} />
-              </button>
-            </div>
-
-            <p style={{ fontSize: 12, color: '#5a6178', lineHeight: 1.5, margin: '0 0 16px' }}>
-              {recoveryStep === 1 && 'Enter your account email and we will send a 6-digit verification code.'}
-              {recoveryStep === 2 && 'Enter the 6-digit verification code and your new password below.'}
-              {recoveryStep === 3 && 'Your password has been successfully updated. You can now close this window and sign in.'}
-            </p>
-
-            {recoveryError && (
-              <div className="login-error" style={{ marginBottom: 14 }} role="alert">
-                {recoveryError}
-              </div>
-            )}
-
-            {recoverySuccess && recoveryStep !== 3 && (
-              <div style={{ padding: '9px 12px', borderRadius: 10, background: '#eef8f2', border: '1px solid #c8e8d4', color: '#1f6b43', fontSize: 11, fontWeight: 600, marginBottom: 14 }}>
-                {recoverySuccess}
-              </div>
-            )}
-
-            {recoveryStep === 1 && (
-              <form onSubmit={handleRequestCode}>
-                <label style={{ display: 'block', marginBottom: 16 }}>
-                  <span className="login-label" style={{ fontSize: 10, letterSpacing: '0.06em' }}>EMAIL ADDRESS</span>
-                  <div className="login-field" style={{ marginTop: 6 }}>
-                    <Mail size={15} />
-                    <input
-                      type="email"
-                      value={recoveryEmail}
-                      onChange={(e) => setRecoveryEmail(e.target.value)}
-                      placeholder="name@example.com"
-                      required
-                    />
-                  </div>
-                </label>
-                <button
-                  className="primary-btn"
-                  type="submit"
-                  disabled={recoveryLoading}
-                  style={{ width: '100%', justifyContent: 'center', padding: '12px 16px', background: '#1f4333', color: '#fff', borderRadius: 24 }}
-                >
-                  {recoveryLoading ? (
-                    <><Loader2 size={15} className="animate-spin" /> Sending code…</>
-                  ) : (
-                    <>Send verification code <ArrowRight size={14} /></>
-                  )}
-                </button>
-              </form>
-            )}
-
-            {recoveryStep === 2 && (
-              <form onSubmit={handleResetPassword}>
-                <label style={{ display: 'block', marginBottom: 12 }}>
-                  <span className="login-label" style={{ fontSize: 10, letterSpacing: '0.06em' }}>VERIFICATION CODE (6 DIGITS)</span>
-                  <div className="login-field" style={{ marginTop: 6 }}>
-                    <KeyRound size={15} />
-                    <input
-                      type="text"
-                      maxLength={6}
-                      value={recoveryCode}
-                      onChange={(e) => setRecoveryCode(e.target.value)}
-                      placeholder="849201"
-                      required
-                    />
-                  </div>
-                </label>
-
-                <label style={{ display: 'block', marginBottom: 16 }}>
-                  <span className="login-label" style={{ fontSize: 10, letterSpacing: '0.06em' }}>NEW PASSWORD</span>
-                  <div className="login-field" style={{ marginTop: 6 }}>
-                    <Lock size={15} />
-                    <input
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="At least 6 characters"
-                      minLength={6}
-                      required
-                    />
-                  </div>
-                </label>
-
-                <button
-                  className="primary-btn"
-                  type="submit"
-                  disabled={recoveryLoading}
-                  style={{ width: '100%', justifyContent: 'center', padding: '12px 16px', background: '#1f4333', color: '#fff', borderRadius: 24 }}
-                >
-                  {recoveryLoading ? (
-                    <><Loader2 size={15} className="animate-spin" /> Resetting password…</>
-                  ) : (
-                    <>Reset password <CheckCircle2 size={14} /></>
-                  )}
-                </button>
-              </form>
-            )}
-
-            {recoveryStep === 3 && (
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
-                <button
-                  className="primary-btn"
-                  type="button"
-                  onClick={() => setRecoveryOpen(false)}
-                  style={{ background: '#1f4333', color: '#fff', borderRadius: 24, padding: '10px 20px' }}
-                >
-                  Done
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      <PasswordRecoveryModal
+        isOpen={recoveryOpen}
+        onClose={() => setRecoveryOpen(false)}
+        recoveryStep={recoveryStep}
+        setRecoveryStep={setRecoveryStep}
+        recoveryEmail={recoveryEmail}
+        setRecoveryEmail={setRecoveryEmail}
+        recoveryCode={recoveryCode}
+        setRecoveryCode={setRecoveryCode}
+        recoveryToken={recoveryToken}
+        setRecoveryToken={setRecoveryToken}
+        generatedResetLink={generatedResetLink}
+        emailSent={emailSent}
+        newPassword={newPassword}
+        setNewPassword={setNewPassword}
+        recoveryLoading={recoveryLoading}
+        recoveryError={recoveryError}
+        recoverySuccess={recoverySuccess}
+        onRequestCode={handleRequestCode}
+        onResetPassword={handleResetPassword}
+      />
     </div>
   );
 }

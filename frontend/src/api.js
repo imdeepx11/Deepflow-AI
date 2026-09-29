@@ -2,7 +2,7 @@ const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
   || (import.meta.env.DEV ? '/api' : 'https://deepflow-ai-2.onrender.com/api');
 
 
-export async function fetchApi(endpoint, options = {}, retried = false) {
+export async function fetchApi(endpoint, options = {}, retryCount = 0) {
   try {
     const res = await fetch(`${API_BASE}${endpoint}`, {
       headers: {
@@ -17,12 +17,16 @@ export async function fetchApi(endpoint, options = {}, retried = false) {
     }
     return await res.json();
   } catch (error) {
-    if (!retried && (error.message.includes('fetch') || error.message.includes('Network') || error.message.includes('Failed to fetch'))) {
-      console.warn(`API retry for ${endpoint} due to server wake-up delay...`);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      return fetchApi(endpoint, options, true);
+    const isNetworkError = error.name === 'TypeError' || (error.message && (error.message.includes('fetch') || error.message.includes('Network') || error.message.includes('Failed to fetch')));
+    if (retryCount < 3 && isNetworkError) {
+      console.warn(`API retry ${retryCount + 1}/3 for ${endpoint} due to server wake-up delay...`);
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+      return fetchApi(endpoint, options, retryCount + 1);
     }
     console.error(`API Error on ${endpoint}:`, error);
+    if (isNetworkError) {
+      throw new Error('Backend server is waking up (Render cold start). Please wait ~15 seconds and try again.');
+    }
     throw error;
   }
 }
@@ -37,7 +41,9 @@ export const api = {
   loginWithGoogle: (idToken) => fetchApi('/auth/google', { method: 'POST', body: JSON.stringify({ id_token: idToken }) }),
   forgotPassword: (email) => fetchApi('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
   verifyCode: (email, code) => fetchApi('/auth/verify-code', { method: 'POST', body: JSON.stringify({ email, code }) }),
+  verifyResetToken: (token) => fetchApi(`/auth/verify-reset-token/${token}`),
   resetPassword: (email, code, new_password) => fetchApi('/auth/reset-password', { method: 'POST', body: JSON.stringify({ email, code, new_password }) }),
+  resetPasswordWithToken: (token, new_password) => fetchApi('/auth/reset-password-with-token', { method: 'POST', body: JSON.stringify({ token, new_password }) }),
   getMe: () => fetchApi('/auth/me'),
 
 

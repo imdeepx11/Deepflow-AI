@@ -162,7 +162,7 @@ body.dark-mode .pill-rejected { background: #3b272a; color: #e0a5aa; border-colo
 }
 .ledger-hero-title {
   margin: 6px 0 0;
-  font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
+  font-family: 'Eurostile', 'Eurostile Extended', 'Microgramma', 'Square 721', 'Exo 2', 'Orbitron', 'Rajdhani', sans-serif;
   font-size: clamp(35px, 4vw, 52px);
   font-weight: 500;
   line-height: 1.05;
@@ -199,7 +199,7 @@ body.dark-mode .pill-rejected { background: #3b272a; color: #e0a5aa; border-colo
   position: relative;
 }
 .stamp-circle::before { content: ''; position: absolute; inset: 9px; border: 1px solid rgba(169,129,76,.5); border-radius: 50%; }
-.stamp-circle strong { font-family: 'Fraunces','Playfair Display',Georgia,serif; font-size: 45px; font-weight: 600; }
+.stamp-circle strong { font-family: 'Eurostile', 'Eurostile Extended', 'Microgramma', 'Square 721', 'Exo 2', 'Orbitron', 'Rajdhani', sans-serif; font-size: 45px; font-weight: 600; }
 .stamp-circle span { margin-top: 2px; color: var(--gold); font-size: 9px; letter-spacing: .16em; }
 .ledger-stamp-card p { padding-top: 15px; border-top: 1px solid rgba(255,255,255,.16); color: #b8bcc9; font-size: 11px; line-height: 1.65; }
 .ledger-stamp-card p strong { color: var(--cream); font-weight: 600; }
@@ -209,7 +209,7 @@ body.dark-mode .pill-rejected { background: #3b272a; color: #e0a5aa; border-colo
 .ledger-row-label { display: flex; align-items: center; gap: 10px; color: var(--ink-soft); font-size: 13px; }
 .ledger-row-label svg { color: var(--gold); }
 .ledger-row-right { display: flex; align-items: baseline; gap: 14px; }
-.ledger-value { font-family: 'Fraunces','Playfair Display',Georgia,serif; font-size: 28px; font-weight: 500; }
+.ledger-value { font-family: 'Eurostile', 'Eurostile Extended', 'Microgramma', 'Square 721', 'Exo 2', 'Orbitron', 'Rajdhani', sans-serif; font-size: 28px; font-weight: 500; }
 .ledger-delta { padding: 2px 8px; border: 1px solid var(--line); color: var(--forest); font-size: 10px; }
 .ledger-delta.negative { color: var(--burgundy); }
 
@@ -223,7 +223,7 @@ body.dark-mode .pill-rejected { background: #3b272a; color: #e0a5aa; border-colo
 .ledger-donut-content { display: flex; align-items: center; justify-content: center; gap: 24px; margin-top: 13px; }
 .ledger-donut-wrap { width: 145px; height: 145px; position: relative; flex: 0 0 145px; }
 .ledger-donut-center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; pointer-events: none; }
-.ledger-donut-center strong { font-family: 'Fraunces','Playfair Display',Georgia,serif; font-size: 34px; font-weight: 600; }
+.ledger-donut-center strong { font-family: 'Eurostile', 'Eurostile Extended', 'Microgramma', 'Square 721', 'Exo 2', 'Orbitron', 'Rajdhani', sans-serif; font-size: 34px; font-weight: 600; }
 .ledger-donut-center span { color: #b8bcc9; font-size: 8px; letter-spacing: .17em; }
 .ledger-tally { min-width: 150px; display: grid; gap: 11px; }
 .ledger-tally-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; color: #e6e8ea; font-size: 10px; }
@@ -237,14 +237,14 @@ body.dark-mode .pill-rejected { background: #3b272a; color: #e0a5aa; border-colo
 .ledger-note-card .insight-list { margin-top: 18px; }
 .ledger-note-card .insight-item { padding-bottom: 11px; }
 .ledger-quote { background: var(--paper-2); }
-.ledger-quote blockquote { max-width: 410px; margin-top: 23px; font-family: 'Fraunces','Playfair Display',Georgia,serif; font-size: 22px; line-height: 1.18; }
+.ledger-quote blockquote { max-width: 410px; margin-top: 23px; font-family: 'Eurostile', 'Eurostile Extended', 'Microgramma', 'Square 721', 'Exo 2', 'Orbitron', 'Rajdhani', sans-serif; font-size: 22px; line-height: 1.18; }
 .ledger-quote > span { display: block; margin-top: 23px; color: var(--ink-soft); font-size: 10px; }
 
 /* Contact modal */
 .contact-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: rgba(25,27,31,.45); backdrop-filter: blur(8px); }
 .contact-modal { width: min(440px, 100%); padding: 28px; background: var(--paper); border: 1px solid var(--line); box-shadow: 0 30px 90px rgba(30,25,19,.24); }
 .contact-modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
-.contact-modal h2 { margin: 5px 0 0; font-family: 'Fraunces','Playfair Display',Georgia,serif; font-size: 37px; font-weight: 500; }
+.contact-modal h2 { margin: 5px 0 0; font-family: 'Eurostile', 'Eurostile Extended', 'Microgramma', 'Square 721', 'Exo 2', 'Orbitron', 'Rajdhani', sans-serif; font-size: 37px; font-weight: 500; }
 .contact-modal p { margin: 12px 0 20px; color: var(--ink-soft); font-size: 12px; line-height: 1.65; }
 .modal-close { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: transparent; color: var(--ink); }
 .contact-mail-link { text-decoration: none; }
@@ -270,10 +270,10 @@ body.dark-mode .pill-rejected { background: #3b272a; color: #e0a5aa; border-colo
 .login-page { min-height: 100vh; background: var(--cream); color: var(--ink); }
 .login-shell { min-height: 100vh; display: grid; grid-template-columns: 1.15fr .85fr; }
 .login-editorial { position: relative; padding: 42px 56px; border-right: 1px solid var(--line); background: var(--paper-2); }
-.login-editorial h1 { margin-top: 20px; font-family: 'Fraunces','Playfair Display',Georgia,serif; font-size: clamp(62px, 7vw, 100px); font-weight: 500; line-height: .88; letter-spacing: -.055em; }
+.login-editorial h1 { margin-top: 20px; font-family: 'Eurostile', 'Eurostile Extended', 'Microgramma', 'Square 721', 'Exo 2', 'Orbitron', 'Rajdhani', sans-serif; font-size: clamp(62px, 7vw, 100px); font-weight: 500; line-height: .88; letter-spacing: -.055em; }
 .login-editorial > p { max-width: 540px; margin-top: 22px; color: var(--ink-soft); font-size: 14px; line-height: 1.75; }
 .login-side { display: flex; flex-direction: column; justify-content: center; padding: 52px; background: var(--paper); }
-.login-side h2 { font-family: 'Fraunces','Playfair Display',Georgia,serif; font-size: 50px; font-weight: 500; line-height: 1; }
+.login-side h2 { font-family: 'Eurostile', 'Eurostile Extended', 'Microgramma', 'Square 721', 'Exo 2', 'Orbitron', 'Rajdhani', sans-serif; font-size: 50px; font-weight: 500; line-height: 1; }
 .login-side > p { max-width: 390px; margin-top: 9px; color: var(--ink-soft); font-size: 12px; line-height: 1.65; }
 .login-form { display: grid; gap: 15px; margin-top: 26px; }
 .login-form label { display: grid; gap: 7px; }
