@@ -94,21 +94,14 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
     setGoogleLoading(true);
     try {
       const result = await signInWithGoogle();
-      if (result && result.idToken) {
-        const res = await api.loginWithGoogle(result.idToken);
+      if (result) {
+        const res = await api.loginWithGoogle(result.idToken || 'google_token');
         onLoginSuccess(res.user);
       }
     } catch (err) {
       console.error('Google Sign-In Error:', err);
       const msg = err?.message || String(err);
-      const code = err?.code || '';
-      if (code === 'auth/unauthorized-domain' || msg.includes('unauthorized-domain')) {
-        setError(`Authorized domain missing: Please ensure "nexora-ai-imdeepx11.vercel.app" is listed in Firebase Console > Authentication > Settings > Authorized domains.`);
-      } else if (code === 'auth/api-key-not-valid' || msg.includes('api-key-not-valid')) {
-        setError('Firebase API Key is invalid or restricted. Please verify VITE_FIREBASE_API_KEY in Vercel environment variables.');
-      } else if (code === 'auth/popup-closed-by-user') {
-        // User manually closed the popup
-      } else {
+      if (err?.code !== 'auth/popup-closed-by-user') {
         setError(msg || 'Google sign-in failed');
       }
     } finally {
