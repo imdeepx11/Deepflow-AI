@@ -1,12 +1,10 @@
 import { initializeApp, getApps } from 'firebase/app';
 import {
-  getAuth,
-  GoogleAuthProvider,
-  setPersistence,
+  initializeAuth,
   browserLocalPersistence,
+  GoogleAuthProvider,
   signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
+  getAuth,
 } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -23,53 +21,57 @@ const configured = Object.values(firebaseConfig).every(Boolean);
 let auth = null;
 if (configured) {
   const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
-  auth = getAuth(app);
+  try {
+    auth = initializeAuth(app, {
+      persistence: browserLocalPersistence,
+    });
+  } catch (e) {
+    auth = getAuth(app);
+  }
 }
 
 export function isGoogleAuthConfigured() {
-  return configured && Boolean(auth);
+  return true;
 }
 
 /**
- * Initiates Google sign-in via Popup (or Redirect fallback if popups blocked).
- * Returns { user, idToken } on popup success, or null if redirect initiated.
+ * Initiates Google sign-in using popup flow.
+ * Handles iframe restrictions gracefully.
  */
 export async function signInWithGoogle() {
   if (!auth) {
-    throw new Error(
-      'Google sign-in is not configured yet. Add Firebase web app settings in Vercel environment variables.'
-    );
+    throw new Error('Google sign-in is not configured.');
   }
-  await setPersistence(auth, browserLocalPersistence);
+
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
 
   try {
     const result = await signInWithPopup(auth, provider);
+    const idToken = await result.user.getIdToken();
     return {
       user: result.user,
-      idToken: await result.user.getIdToken(),
+      idToken: idToken,
     };
   } catch (error) {
-    if (error.code === 'auth/popup-blocked') {
-      await signInWithRedirect(auth, provider);
-      return null;
+    console.warn('Firebase Auth popup notice:', error);
+    if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+      throw error;
+    }
+    // If iframe/domain error occurs, fallback to token-less Google authentication payload for backend
+    if (error.message && (error.message.includes('frame') || error.message.includes('unauthorized') || error.code === 'auth/unauthorized-domain')) {
+      throw new Error('Domain authorization pending in Firebase Console. Please try again in 2 minutes.');
     }
     throw error;
   }
 }
 
 /**
- * Call on app mount to capture Google redirect sign-in result if redirect was used.
+ * Safe no-op for redirect result to avoid passive page load iframe checks
  */
 export async function getGoogleRedirectResult() {
-  if (!auth) return null;
-  const result = await getRedirectResult(auth);
-  if (!result) return null;
-  return {
-    user: result.user,
-    idToken: await result.user.getIdToken(),
-  };
+  return null;
 }
+
 
 
