@@ -1,5 +1,12 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, setPersistence, browserSessionPersistence, signInWithPopup } from 'firebase/auth';
+import {
+  getAuth,
+  GoogleAuthProvider,
+  setPersistence,
+  browserSessionPersistence,
+  signInWithRedirect,
+  getRedirectResult,
+} from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -22,17 +29,35 @@ export function isGoogleAuthConfigured() {
   return configured && Boolean(auth);
 }
 
+/**
+ * Initiates Google sign-in via redirect (avoids "Illegal URL for new Frame"
+ * errors that signInWithPopup causes on Vercel preview/production URLs).
+ * Call getGoogleRedirectResult() on app load to capture the result.
+ */
 export async function signInWithGoogle() {
   if (!auth) {
-    throw new Error('Google sign-in is not configured yet. Add the Firebase web app settings to Vercel environment variables.');
+    throw new Error(
+      'Google sign-in is not configured yet. Add the Firebase web app settings to Vercel environment variables.'
+    );
   }
-
   await setPersistence(auth, browserSessionPersistence);
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
-  const result = await signInWithPopup(auth, provider);
+  // Redirect flow — page navigates away and comes back with the result.
+  await signInWithRedirect(auth, provider);
+}
+
+/**
+ * Call this once on app mount to check whether the user has just returned
+ * from a Google redirect sign-in. Returns { user, idToken } or null.
+ */
+export async function getGoogleRedirectResult() {
+  if (!auth) return null;
+  const result = await getRedirectResult(auth);
+  if (!result) return null;
   return {
     user: result.user,
     idToken: await result.user.getIdToken(),
   };
 }
+

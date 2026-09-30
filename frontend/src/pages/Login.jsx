@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, CheckCircle2, Lock, Mail, Moon, Sparkles, Sun, User as UserIcon } from 'lucide-react';
 import { api } from '../api';
-import { isGoogleAuthConfigured, signInWithGoogle } from '../firebase-client';
+import { isGoogleAuthConfigured, signInWithGoogle, getGoogleRedirectResult } from '../firebase-client';
 import GoogleMark from '../components/GoogleMark';
 import PasswordRecoveryModal from '../components/PasswordRecoveryModal';
 
@@ -43,6 +43,22 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
         .then((res) => { if (res.email) setRecoveryEmail(res.email); })
         .catch((err) => setRecoveryError(err.message || 'Password reset link is invalid or expired.'));
     }
+
+    // Handle Google redirect sign-in result when returning from Google's auth page
+    setGoogleLoading(true);
+    getGoogleRedirectResult()
+      .then(async (result) => {
+        if (result) {
+          const res = await api.loginWithGoogle(result.idToken);
+          onLoginSuccess(res.user);
+        }
+      })
+      .catch((err) => {
+        if (err && err.code !== 'auth/no-auth-event') {
+          setError(err.message || 'Google sign-in failed');
+        }
+      })
+      .finally(() => setGoogleLoading(false));
   }, []);
 
   const resetState = () => { setError(''); };
@@ -74,12 +90,11 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
     if (!isGoogleAuthConfigured()) return setError('Google sign-in is not connected yet.');
     setGoogleLoading(true);
     try {
-      const result = await signInWithGoogle();
-      const res = await api.loginWithGoogle(result.idToken);
-      onLoginSuccess(res.user);
+      // signInWithGoogle() redirects the page — no return value to handle here.
+      // The result is captured in the useEffect above when the page reloads.
+      await signInWithGoogle();
     } catch (err) {
       setError(err.message || 'Google sign-in failed');
-    } finally {
       setGoogleLoading(false);
     }
   };
