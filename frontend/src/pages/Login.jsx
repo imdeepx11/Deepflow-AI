@@ -44,21 +44,24 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
         .catch((err) => setRecoveryError(err.message || 'Password reset link is invalid or expired.'));
     }
 
-    // Handle Google redirect sign-in result when returning from Google's auth page
-    setGoogleLoading(true);
+    // Silently check for Google redirect sign-in result on mount
     getGoogleRedirectResult()
       .then(async (result) => {
         if (result) {
-          const res = await api.loginWithGoogle(result.idToken);
-          onLoginSuccess(res.user);
+          setGoogleLoading(true);
+          try {
+            const res = await api.loginWithGoogle(result.idToken);
+            onLoginSuccess(res.user);
+          } catch (err) {
+            setError(err.message || 'Google sign-in failed');
+          } finally {
+            setGoogleLoading(false);
+          }
         }
       })
-      .catch((err) => {
-        if (err && err.code !== 'auth/no-auth-event') {
-          setError(err.message || 'Google sign-in failed');
-        }
-      })
-      .finally(() => setGoogleLoading(false));
+      .catch(() => {
+        // Silently ignore background initialization errors on initial page load
+      });
   }, []);
 
   const resetState = () => { setError(''); };
@@ -90,11 +93,16 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
     if (!isGoogleAuthConfigured()) return setError('Google sign-in is not connected yet.');
     setGoogleLoading(true);
     try {
-      // signInWithGoogle() redirects the page — no return value to handle here.
-      // The result is captured in the useEffect above when the page reloads.
       await signInWithGoogle();
     } catch (err) {
-      setError(err.message || 'Google sign-in failed');
+      const msg = err?.message || '';
+      if (msg.includes('api-key-not-valid') || err?.code === 'auth/api-key-not-valid') {
+        setError('Firebase API Key is invalid or restricted. Please verify VITE_FIREBASE_API_KEY in Vercel environment variables.');
+      } else if (msg.includes('unauthorized-domain') || err?.code === 'auth/unauthorized-domain') {
+        setError('Domain not authorized in Firebase Console. Add nexora-ai-imdeepx11.vercel.app under Firebase Auth > Settings > Authorized domains.');
+      } else {
+        setError(msg || 'Google sign-in failed');
+      }
       setGoogleLoading(false);
     }
   };
