@@ -1,11 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
-import {
-  initializeAuth,
-  browserLocalPersistence,
-  GoogleAuthProvider,
-  signInWithPopup,
-  getAuth,
-} from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyRjFsQfV6_j8r1DrD-9fTvC3rtOCQHaKeF',
@@ -16,27 +10,16 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:574809477623:web:327cafe14dc1cfceed09ef2',
 };
 
-const configured = Object.values(firebaseConfig).every(Boolean);
-
-let auth = null;
-if (configured) {
-  const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
-  try {
-    auth = initializeAuth(app, {
-      persistence: browserLocalPersistence,
-    });
-  } catch (e) {
-    auth = getAuth(app);
-  }
-}
+const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
 export function isGoogleAuthConfigured() {
-  return true;
+  return Boolean(auth);
 }
 
 /**
- * Initiates Google sign-in using popup flow.
- * Handles iframe restrictions gracefully.
+ * Initiates Google sign-in using standard Firebase Auth popup flow.
+ * Returns { user, idToken } on success, or null if cancelled by user.
  */
 export async function signInWithGoogle() {
   if (!auth) {
@@ -54,24 +37,20 @@ export async function signInWithGoogle() {
       idToken: idToken,
     };
   } catch (error) {
-    console.warn('Firebase Auth popup notice:', error);
-    if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
-      throw error;
-    }
-    // If iframe/domain error occurs, fallback to token-less Google authentication payload for backend
-    if (error.message && (error.message.includes('frame') || error.message.includes('unauthorized') || error.code === 'auth/unauthorized-domain')) {
-      throw new Error('Domain authorization pending in Firebase Console. Please try again in 2 minutes.');
+    if (error?.code === 'auth/popup-closed-by-user' || error?.code === 'auth/cancelled-popup-request') {
+      return null;
     }
     throw error;
   }
 }
 
 /**
- * Safe no-op for redirect result to avoid passive page load iframe checks
+ * Safe no-op for redirect result to prevent passive page load checks
  */
 export async function getGoogleRedirectResult() {
   return null;
 }
+
 
 
 
