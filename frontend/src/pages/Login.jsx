@@ -31,7 +31,12 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
   const [recoveryError, setRecoveryError] = useState('');
   const [recoverySuccess, setRecoverySuccess] = useState('');
 
+  const [slowServerNotice, setSlowServerNotice] = useState(false);
+
   useEffect(() => {
+    // Pre-warm Render backend server immediately on page mount so it is ready when user signs in
+    api.getMe().catch(() => {});
+
     const params = new URLSearchParams(window.location.search);
     const tokenParam = params.get('reset_token');
     if (tokenParam) {
@@ -90,8 +95,10 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
 
   const googleLogin = async () => {
     setError('');
+    setSlowServerNotice(false);
     if (!isGoogleAuthConfigured()) return setError('Google sign-in is not connected yet.');
     setGoogleLoading(true);
+    const slowTimer = setTimeout(() => setSlowServerNotice(true), 2500);
     try {
       const result = await signInWithGoogle();
       if (result) {
@@ -105,6 +112,8 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
         setError(msg || 'Google sign-in failed');
       }
     } finally {
+      clearTimeout(slowTimer);
+      setSlowServerNotice(false);
       setGoogleLoading(false);
     }
   };
@@ -206,7 +215,7 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
 
             <button className="google-login" type="button" onClick={googleLogin} disabled={busy}>
               <GoogleMark />
-              <span>{googleLoading ? 'Connecting to Google…' : 'Continue with Google'}</span>
+              <span>{googleLoading ? (slowServerNotice ? 'Waking up server… (~15s)' : 'Connecting to Google…') : 'Continue with Google'}</span>
             </button>
 
             <div className="login-divider">
