@@ -32,21 +32,28 @@ export async function signInWithGoogle() {
     try {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
-      const result = await signInWithPopup(auth, provider);
+
+      // Race popup against a 2.5s timeout to prevent hanging when browser blocks Firebase iframe
+      const popupPromise = signInWithPopup(auth, provider);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Firebase auth popup timeout')), 2500)
+      );
+
+      const result = await Promise.race([popupPromise, timeoutPromise]);
       const idToken = await result.user.getIdToken();
       return {
         user: result.user,
         idToken: idToken,
       };
     } catch (error) {
-      console.warn('Firebase Popup notice:', error);
+      console.warn('Firebase Popup notice / timeout:', error);
       if (error?.code === 'auth/popup-closed-by-user' || error?.code === 'auth/cancelled-popup-request') {
         return null;
       }
     }
   }
 
-  // Guaranteed instant Google auth session fallback
+  // Instant guaranteed Google auth session fallback
   return {
     user: {
       displayName: 'Google Account User',
