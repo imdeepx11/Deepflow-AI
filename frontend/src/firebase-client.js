@@ -3,7 +3,8 @@ import {
   getAuth,
   GoogleAuthProvider,
   setPersistence,
-  browserSessionPersistence,
+  browserLocalPersistence,
+  signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
 } from 'firebase/auth';
@@ -30,26 +31,36 @@ export function isGoogleAuthConfigured() {
 }
 
 /**
- * Initiates Google sign-in via redirect (avoids "Illegal URL for new Frame"
- * errors that signInWithPopup causes on Vercel preview/production URLs).
- * Call getGoogleRedirectResult() on app load to capture the result.
+ * Initiates Google sign-in via Popup (or Redirect fallback if popups blocked).
+ * Returns { user, idToken } on popup success, or null if redirect initiated.
  */
 export async function signInWithGoogle() {
   if (!auth) {
     throw new Error(
-      'Google sign-in is not configured yet. Add the Firebase web app settings to Vercel environment variables.'
+      'Google sign-in is not configured yet. Add Firebase web app settings in Vercel environment variables.'
     );
   }
-  await setPersistence(auth, browserSessionPersistence);
+  await setPersistence(auth, browserLocalPersistence);
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
-  // Redirect flow — page navigates away and comes back with the result.
-  await signInWithRedirect(auth, provider);
+
+  try {
+    const result = await signInWithPopup(auth, provider);
+    return {
+      user: result.user,
+      idToken: await result.user.getIdToken(),
+    };
+  } catch (error) {
+    if (error.code === 'auth/popup-blocked') {
+      await signInWithRedirect(auth, provider);
+      return null;
+    }
+    throw error;
+  }
 }
 
 /**
- * Call this once on app mount to check whether the user has just returned
- * from a Google redirect sign-in. Returns { user, idToken } or null.
+ * Call on app mount to capture Google redirect sign-in result if redirect was used.
  */
 export async function getGoogleRedirectResult() {
   if (!auth) return null;
@@ -60,4 +71,5 @@ export async function getGoogleRedirectResult() {
     idToken: await result.user.getIdToken(),
   };
 }
+
 
