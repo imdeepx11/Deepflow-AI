@@ -8,6 +8,7 @@ import './workspace-sidebar.css';
 import './contact-modal-fix.css';
 import './login-premium.css';
 import Header from './components/Header';
+import { fetchApi } from './api';
 import UploadModal from './components/UploadModal';
 
 import Login from './pages/Login';
@@ -45,6 +46,26 @@ export default function App() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedDocId, setSelectedDocId] = useState(null);
   const [darkMode, setDarkMode] = useState(() => (localStorage.getItem('nexora_theme') || localStorage.getItem('deepflow_theme')) === 'dark');
+  const [serverReady, setServerReady] = useState(false);
+
+  // Pre-warm the backend the moment the app loads so cold start
+  // happens in the background before the user tries to sign in.
+  useEffect(() => {
+    let cancelled = false;
+    async function warmUp() {
+      try {
+        await fetchApi('/auth/ping-health', {}, 0).catch(() =>
+          fetchApi('/', {}, 0)
+        );
+      } catch (_) {
+        // ignore — server might still be waking; Login retries handle the rest
+      } finally {
+        if (!cancelled) setServerReady(true);
+      }
+    }
+    warmUp();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
@@ -75,7 +96,7 @@ export default function App() {
     setCurrentPage('analyzer');
   };
 
-  if (!user) return <Login onLoginSuccess={handleLoginSuccess} darkMode={darkMode} onToggleDarkMode={() => setDarkMode(v => !v)} />;
+  if (!user) return <Login onLoginSuccess={handleLoginSuccess} darkMode={darkMode} onToggleDarkMode={() => setDarkMode(v => !v)} serverReady={serverReady} />;
 
   return (
     <div className="editorial-app">

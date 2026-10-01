@@ -11,7 +11,7 @@ import GoogleMark from '../components/GoogleMark';
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
+export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode, serverReady }) {
   const [authMode, setAuthMode] = useState('signin');
 
   // Form fields
@@ -177,6 +177,20 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
             <div className="page-kicker">{authMode === 'signin' ? 'WELCOME BACK' : 'CREATE AN ACCOUNT'}</div>
             <h2>{authMode === 'signin' ? 'Sign in.' : 'Register.'}</h2>
             <p>{authMode === 'signin' ? 'Use your email or continue with Google.' : 'Create your account to start managing document workflows.'}</p>
+
+            {/* Server warm-up status */}
+            {!serverReady && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 10, background: '#fffbea', border: '1px solid #f5d87a', color: '#7a5c00', fontSize: 12, fontWeight: 600, marginBottom: 12 }}>
+                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#f5a623', animation: 'pulse 1.2s infinite' }} />
+                Waking up server… this takes ~30 seconds on first visit. Please wait before signing in.
+              </div>
+            )}
+            {serverReady && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 10, background: '#eef8f2', border: '1px solid #c8e8d4', color: '#1f6b43', fontSize: 12, fontWeight: 600, marginBottom: 12 }}>
+                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#22c55e' }} />
+                Server is ready — you can sign in now!
+              </div>
+            )}
 
             {error && <div className="login-error" role="alert">{error}</div>}
 
