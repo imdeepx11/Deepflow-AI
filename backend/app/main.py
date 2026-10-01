@@ -68,6 +68,12 @@ def root():
     }
 
 
+@app.get("/api/health")
+def health():
+    """Lightweight health-check used by frontend warmup ping. No DB query."""
+    return {"status": "ok"}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)

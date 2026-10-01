@@ -3,6 +3,7 @@ import random
 import secrets
 import time
 import re
+import os
 from fastapi import APIRouter, HTTPException, Depends, Request, BackgroundTasks
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -11,24 +12,26 @@ from app.database.models import User
 from app.services.audit import create_audit_log
 
 # ── Firebase Admin SDK (token verification) ─────────────────────────────────
+# Only initialize if FIREBASE_CREDENTIALS env var is explicitly set.
+# This avoids the 30-60 second hang caused by trying to reach the GCP
+# metadata server (http://metadata.google.internal) on non-GCP hosts like Render.
+_FIREBASE_ADMIN_OK = False
+firebase_auth = None
+
 try:
     import firebase_admin
     from firebase_admin import credentials, auth as firebase_auth
 
-    if not firebase_admin._apps:
-        # Initialise with Application Default Credentials OR a service-account file.
-        # On Render / production: set GOOGLE_APPLICATION_CREDENTIALS env var to the
-        # path of your Firebase service-account JSON, or use the project-ID approach.
-        try:
-            firebase_admin.initialize_app()
-        except Exception:
-            # Fallback: initialise without credentials (token verification will fail
-            # gracefully and we fall back to trusting the name/email from the request).
-            firebase_admin.initialize_app(credentials.ApplicationDefault())
-
-    _FIREBASE_ADMIN_OK = True
-except Exception as _fb_init_err:
-    print(f"[auth] firebase-admin not available: {_fb_init_err}")
+    _creds_json = os.environ.get("FIREBASE_CREDENTIALS", "")
+    if _creds_json and not firebase_admin._apps:
+        import json as _json
+        _cred_dict = _json.loads(_creds_json)
+        firebase_admin.initialize_app(credentials.Certificate(_cred_dict))
+        _FIREBASE_ADMIN_OK = True
+    elif not _creds_json:
+        print("[auth] FIREBASE_CREDENTIALS not set — skipping Firebase Admin init (trusting frontend tokens).")
+except Exception as _fb_err:
+    print(f"[auth] firebase-admin init skipped: {_fb_err}")
     _FIREBASE_ADMIN_OK = False
     firebase_auth = None
 

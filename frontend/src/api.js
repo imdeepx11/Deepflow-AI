@@ -10,7 +10,7 @@ const BACKEND_ROOT = API_BASE.replace(/\/api$/, '');
  */
 export async function pingBackendRoot() {
   try {
-    const res = await fetch(`${BACKEND_ROOT}/`, {
+    const res = await fetch(`${BACKEND_ROOT}/api/health`, {
       method: 'GET',
       signal: AbortSignal.timeout(8000),
     });
