@@ -18,14 +18,14 @@ export async function fetchApi(endpoint, options = {}, retryCount = 0) {
     return await res.json();
   } catch (error) {
     const isNetworkError = error.name === 'TypeError' || (error.message && (error.message.includes('fetch') || error.message.includes('Network') || error.message.includes('Failed to fetch')));
-    if (retryCount < 3 && isNetworkError) {
-      console.warn(`API retry ${retryCount + 1}/3 for ${endpoint} due to server wake-up delay...`);
-      await new Promise((resolve) => setTimeout(resolve, 4000));
+    if (retryCount < 10 && isNetworkError) {
+      console.warn(`API retry ${retryCount + 1}/10 for ${endpoint} — waiting for server to wake up...`);
+      await new Promise((resolve) => setTimeout(resolve, 6000));
       return fetchApi(endpoint, options, retryCount + 1);
     }
     console.error(`API Error on ${endpoint}:`, error);
     if (isNetworkError) {
-      throw new Error('Backend server is waking up (Render cold start). Please wait ~15 seconds and try again.');
+      throw new Error('Backend server is taking longer than usual to wake up. Please wait 30 seconds and try again.');
     }
     throw error;
   }
