@@ -1,5 +1,14 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updateProfile,
+  signOut,
+} from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyRjFsQfV6_j8r1DrD-9fTvC3rtOCQHaKeF',
@@ -10,65 +19,79 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:574809477623:web:327cafe14dc1cfceed09ef2',
 };
 
-let auth = null;
-try {
-  const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
-  auth = getAuth(app);
-} catch (e) {
-  console.warn('Firebase init notice:', e);
-}
-
-export function isGoogleAuthConfigured() {
-  return true;
-}
+const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+export const auth = getAuth(app);
 
 /**
- * Robust Google Sign-In:
- * Attempts Firebase Auth popup; if iframe/domain/popup policy blocks it,
- * safely completes Google authentication via API session.
+ * Register a new user with email + password in Firebase Auth.
+ * Returns { idToken, user } on success.
  */
-export async function signInWithGoogle() {
-  if (auth) {
-    try {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: 'select_account' });
-
-      // Race popup against a 2.5s timeout to prevent hanging when browser blocks Firebase iframe
-      const popupPromise = signInWithPopup(auth, provider);
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Firebase auth popup timeout')), 2500)
-      );
-
-      const result = await Promise.race([popupPromise, timeoutPromise]);
-      const idToken = await result.user.getIdToken();
-      return {
-        user: result.user,
-        idToken: idToken,
-      };
-    } catch (error) {
-      console.warn('Firebase Popup notice / timeout:', error);
-      if (error?.code === 'auth/popup-closed-by-user' || error?.code === 'auth/cancelled-popup-request') {
-        return null;
-      }
-    }
-  }
-
-  // Instant guaranteed Google auth session fallback
+export async function registerWithEmail(name, email, password) {
+  const credential = await createUserWithEmailAndPassword(auth, email, password);
+  // Set display name in Firebase Auth profile
+  await updateProfile(credential.user, { displayName: name });
+  const idToken = await credential.user.getIdToken();
   return {
-    user: {
-      displayName: 'Google Account User',
-      email: 'google.user@nexora.ai',
-    },
-    idToken: 'google_authenticated_session_token',
+    idToken,
+    user: credential.user,
+    displayName: name,
+    email: credential.user.email,
   };
 }
 
-export async function getGoogleRedirectResult() {
-  return null;
+/**
+ * Sign in with email + password via Firebase Auth.
+ * Returns { idToken, user } on success.
+ */
+export async function loginWithEmail(email, password) {
+  const credential = await signInWithEmailAndPassword(auth, email, password);
+  const idToken = await credential.user.getIdToken();
+  return {
+    idToken,
+    user: credential.user,
+    displayName: credential.user.displayName || '',
+    email: credential.user.email,
+  };
 }
 
+/**
+ * Sign in with Google via Firebase Auth popup.
+ * Returns { idToken, user } on success, or null if cancelled.
+ */
+export async function signInWithGoogle() {
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const idToken = await result.user.getIdToken();
+    return {
+      idToken,
+      user: result.user,
+      displayName: result.user.displayName || '',
+      email: result.user.email,
+    };
+  } catch (error) {
+    if (
+      error?.code === 'auth/popup-closed-by-user' ||
+      error?.code === 'auth/cancelled-popup-request'
+    ) {
+      return null; // User closed popup — not an error
+    }
+    throw error;
+  }
+}
 
+/**
+ * Send a Firebase password reset email to the given address.
+ * Firebase will send a proper reset link directly to the user's inbox.
+ */
+export async function sendFirebasePasswordReset(email) {
+  await sendPasswordResetEmail(auth, email);
+}
 
-
-
-
+/**
+ * Sign out the current Firebase user.
+ */
+export async function firebaseSignOut() {
+  await signOut(auth);
+}

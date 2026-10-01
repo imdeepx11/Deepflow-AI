@@ -1,175 +1,140 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, CheckCircle2, Lock, Mail, Moon, Sparkles, Sun, User as UserIcon } from 'lucide-react';
+import {
+  registerWithEmail,
+  loginWithEmail,
+  signInWithGoogle,
+  sendFirebasePasswordReset,
+} from '../firebase-client';
 import { api } from '../api';
-import { isGoogleAuthConfigured, signInWithGoogle, getGoogleRedirectResult } from '../firebase-client';
 import GoogleMark from '../components/GoogleMark';
-import PasswordRecoveryModal from '../components/PasswordRecoveryModal';
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
   const [authMode, setAuthMode] = useState('signin');
 
+  // Form fields
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  // UI states
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Password Recovery state
-  const [recoveryOpen, setRecoveryOpen] = useState(false);
-  const [recoveryEmail, setRecoveryEmail] = useState('');
-  const [recoveryStep, setRecoveryStep] = useState(1);
-  const [recoveryCode, setRecoveryCode] = useState('');
-  const [recoveryToken, setRecoveryToken] = useState('');
-  const [generatedResetLink, setGeneratedResetLink] = useState('');
-  const [emailSent, setEmailSent] = useState(true);
-  const [newPassword, setNewPassword] = useState('');
-  const [recoveryLoading, setRecoveryLoading] = useState(false);
-  const [recoveryError, setRecoveryError] = useState('');
-  const [recoverySuccess, setRecoverySuccess] = useState('');
+  // Password Reset states
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState('');
+  const [resetSuccess, setResetSuccess] = useState('');
 
-  const [slowServerNotice, setSlowServerNotice] = useState(false);
-
-  useEffect(() => {
-    // Pre-warm Render backend server immediately on page mount so it is ready when user signs in
-    api.getMe().catch(() => {});
-
-    const params = new URLSearchParams(window.location.search);
-    const tokenParam = params.get('reset_token');
-    if (tokenParam) {
-      setRecoveryToken(tokenParam);
-      setRecoveryOpen(true);
-      setRecoveryStep(2);
-      window.history.replaceState({}, document.title, window.location.pathname);
-      api.verifyResetToken(tokenParam)
-        .then((res) => { if (res.email) setRecoveryEmail(res.email); })
-        .catch((err) => setRecoveryError(err.message || 'Password reset link is invalid or expired.'));
-    }
-
-    // Silently check for Google redirect sign-in result on mount
-    getGoogleRedirectResult()
-      .then(async (result) => {
-        if (result) {
-          setGoogleLoading(true);
-          try {
-            const res = await api.loginWithGoogle(result.idToken);
-            onLoginSuccess(res.user);
-          } catch (err) {
-            setError(err.message || 'Google sign-in failed');
-          } finally {
-            setGoogleLoading(false);
-          }
-        }
-      })
-      .catch(() => {
-        // Silently ignore background initialization errors on initial page load
-      });
-  }, []);
-
-  const resetState = () => { setError(''); };
+  const resetState = () => setError('');
   const switchMode = (m) => { setAuthMode(m); resetState(); };
 
-  const handleSubmitEmail = async (e) => {
+  /**
+   * Helper: after Firebase auth, sync user to backend and call onLoginSuccess
+   */
+  const syncWithBackend = async ({ idToken, displayName, email: userEmail }) => {
+    // Send Firebase ID token to backend which will verify it and return/create user
+    const res = await api.loginWithGoogle(idToken, displayName, userEmail);
+    onLoginSuccess(res.user);
+  };
+
+  /**
+   * Email + Password Register
+   */
+  const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
     const norm = email.trim().toLowerCase();
     if (!EMAIL_REGEX.test(norm)) return setError('Please enter a valid email address.');
     if (password.length < 6) return setError('Password must contain at least 6 characters.');
-    if (authMode === 'signup' && !name.trim()) return setError('Please enter your full name.');
+    if (!name.trim()) return setError('Please enter your full name.');
 
     setLoading(true);
     try {
-      const res = authMode === 'signup'
-        ? await api.register({ name: name.trim(), email: norm, password })
-        : await api.login({ email: norm, password });
-      onLoginSuccess(res.user);
+      const result = await registerWithEmail(name.trim(), norm, password);
+      await syncWithBackend(result);
     } catch (err) {
-      setError(err.message || (authMode === 'signup' ? 'Registration failed' : 'Sign in failed'));
+      const msg = firebaseErrorMessage(err);
+      setError(msg || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  /**
+   * Email + Password Sign In
+   */
+  const handleSignIn = async (e) => {
+    e.preventDefault();
+    setError('');
+    const norm = email.trim().toLowerCase();
+    if (!EMAIL_REGEX.test(norm)) return setError('Please enter a valid email address.');
+    if (password.length < 6) return setError('Password must contain at least 6 characters.');
+
+    setLoading(true);
+    try {
+      const result = await loginWithEmail(norm, password);
+      await syncWithBackend(result);
+    } catch (err) {
+      const msg = firebaseErrorMessage(err);
+      setError(msg || 'Sign in failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Google Sign In
+   */
   const googleLogin = async () => {
     setError('');
-    setSlowServerNotice(false);
-    if (!isGoogleAuthConfigured()) return setError('Google sign-in is not connected yet.');
     setGoogleLoading(true);
-    const slowTimer = setTimeout(() => setSlowServerNotice(true), 2500);
     try {
       const result = await signInWithGoogle();
       if (result) {
-        const res = await api.loginWithGoogle(result.idToken || 'google_token');
-        onLoginSuccess(res.user);
+        await syncWithBackend(result);
       }
+      // result === null means user closed the popup — do nothing
     } catch (err) {
-      console.error('Google Sign-In Error:', err);
-      const msg = err?.message || String(err);
-      if (err?.code !== 'auth/popup-closed-by-user') {
-        setError(msg || 'Google sign-in failed');
-      }
+      const msg = firebaseErrorMessage(err);
+      setError(msg || 'Google sign-in failed. Please try again.');
     } finally {
-      clearTimeout(slowTimer);
-      setSlowServerNotice(false);
       setGoogleLoading(false);
     }
   };
 
-  const demo = async () => {
-    setEmail('demo@deepflow.ai'); setPassword('demo123'); setError(''); setLoading(true);
+  /**
+   * Firebase Password Reset Email
+   */
+  const handleSendReset = async (e) => {
+    e.preventDefault();
+    setResetError('');
+    setResetSuccess('');
+    const norm = resetEmail.trim().toLowerCase();
+    if (!EMAIL_REGEX.test(norm)) return setResetError('Please enter a valid email address.');
+
+    setResetLoading(true);
     try {
-      const res = await api.login({ email: 'demo@nexora.ai', password: 'demo123' });
-      onLoginSuccess(res.user);
+      await sendFirebasePasswordReset(norm);
+      setResetSuccess(`Password reset link sent to ${norm}. Please check your inbox (and spam folder).`);
     } catch (err) {
-      setError(err.message || 'Demo sign in failed');
+      const msg = firebaseErrorMessage(err);
+      setResetError(msg || 'Failed to send reset email. Please try again.');
     } finally {
-      setLoading(false);
+      setResetLoading(false);
     }
   };
 
-  const handleOpenRecovery = () => {
-    setRecoveryEmail(email || ''); setRecoveryStep(1); setRecoveryCode(''); setRecoveryToken('');
-    setGeneratedResetLink(''); setEmailSent(true); setNewPassword(''); setRecoveryError(''); setRecoverySuccess('');
-    setRecoveryOpen(true);
-  };
-
-  const handleRequestCode = async (e) => {
-    e.preventDefault(); setRecoveryError('');
-    const norm = recoveryEmail.trim().toLowerCase();
-    if (!EMAIL_REGEX.test(norm)) return setRecoveryError('Please enter a valid email address.');
-    setRecoveryLoading(true);
-    try {
-      const res = await api.forgotPassword(norm);
-      setRecoveryStep(2); setRecoveryCode(''); setRecoveryToken(res.reset_token || '');
-      setGeneratedResetLink(res.reset_link || ''); setEmailSent(res.email_sent !== false);
-      setRecoverySuccess(res.message || `Password reset link generated for ${norm}.`);
-    } catch (err) {
-      setRecoveryError(err.message || 'Could not send verification code.');
-    } finally {
-      setRecoveryLoading(false);
-    }
-  };
-
-  const handleResetPassword = async (e) => {
-    e.preventDefault(); setRecoveryError('');
-    if (!newPassword || newPassword.length < 6) return setRecoveryError('Password must contain at least 6 characters.');
-    if (!recoveryToken && (!recoveryCode || recoveryCode.trim().length !== 6)) return setRecoveryError('Please enter a 6-digit verification code.');
-    setRecoveryLoading(true);
-    try {
-      if (recoveryToken) {
-        await api.resetPasswordWithToken(recoveryToken, newPassword);
-      } else {
-        await api.resetPassword(recoveryEmail.trim().toLowerCase(), recoveryCode.trim(), newPassword);
-      }
-      setRecoveryStep(3); setRecoverySuccess('Password reset successfully!');
-    } catch (err) {
-      setRecoveryError(err.message || 'Password reset failed.');
-    } finally {
-      setRecoveryLoading(false);
-    }
+  const handleOpenReset = () => {
+    setResetEmail(email || '');
+    setResetError('');
+    setResetSuccess('');
+    setResetOpen(true);
   };
 
   const busy = loading || googleLoading;
@@ -177,6 +142,7 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
   return (
     <div className="login-page">
       <div className="login-shell premium-login-shell">
+        {/* Left editorial panel */}
         <section className="login-editorial">
           <div className="login-topline">
             <button className="brand-block login-brand" type="button" aria-label="NEXORA AI">
@@ -196,7 +162,7 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
             <h1>Turn<br />documents<br /><em>into decisions.</em></h1>
             <p>Read business documents with AI, surface risk, and move every approval through a workflow that feels deliberate rather than mechanical.</p>
             <div className="login-points">
-              {['PDF, DOCX and TXT extraction', 'Risk scoring and approval routing', 'Firestore-backed audit history'].map((item) => (
+              {['PDF, DOCX and TXT extraction', 'Risk scoring and approval routing', 'Firebase-backed audit history'].map((item) => (
                 <div key={item}><CheckCircle2 size={15} /><span>{item}</span></div>
               ))}
             </div>
@@ -205,6 +171,7 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
           <div className="login-credit">Developed and Designed by <strong>Deepak Gupta</strong></div>
         </section>
 
+        {/* Right auth panel */}
         <section className="login-side premium-login-side">
           <div className="login-form-shell">
             <div className="page-kicker">{authMode === 'signin' ? 'WELCOME BACK' : 'CREATE AN ACCOUNT'}</div>
@@ -213,36 +180,72 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
 
             {error && <div className="login-error" role="alert">{error}</div>}
 
+            {/* Google Sign In */}
             <button className="google-login" type="button" onClick={googleLogin} disabled={busy}>
               <GoogleMark />
-              <span>{googleLoading ? (slowServerNotice ? 'Waking up server… (~15s)' : 'Connecting to Google…') : 'Continue with Google'}</span>
+              <span>{googleLoading ? 'Connecting to Google…' : 'Continue with Google'}</span>
             </button>
 
             <div className="login-divider">
               <span>{authMode === 'signin' ? 'or continue with email' : 'or sign up with email'}</span>
             </div>
 
-            <form className="login-form" onSubmit={handleSubmitEmail} noValidate>
+            {/* Email / Password form */}
+            <form className="login-form" onSubmit={authMode === 'signup' ? handleRegister : handleSignIn} noValidate>
               {authMode === 'signup' && (
                 <label>
                   <span className="login-label">Full Name</span>
-                  <div className="login-field"><UserIcon size={15} /><input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Deepak Gupta" required /></div>
+                  <div className="login-field">
+                    <UserIcon size={15} />
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Deepak Gupta"
+                      required
+                    />
+                  </div>
                 </label>
               )}
               <label>
                 <span className="login-label">Email address</span>
-                <div className="login-field"><Mail size={15} /><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" autoComplete="email" required /></div>
+                <div className="login-field">
+                  <Mail size={15} />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@example.com"
+                    autoComplete="email"
+                    required
+                  />
+                </div>
               </label>
               <label>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                   <span className="login-label" style={{ marginBottom: 0 }}>Password</span>
                   {authMode === 'signin' && (
-                    <button type="button" onClick={handleOpenRecovery} style={{ background: 'none', border: 'none', color: '#8e6b32', fontSize: 11, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>
+                    <button
+                      type="button"
+                      onClick={handleOpenReset}
+                      style={{ background: 'none', border: 'none', color: '#8e6b32', fontSize: 11, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+                    >
                       Forgot password?
                     </button>
                   )}
                 </div>
-                <div className="login-field"><Lock size={15} /><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'} minLength={6} required /></div>
+                <div className="login-field">
+                  <Lock size={15} />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="At least 6 characters"
+                    autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'}
+                    minLength={6}
+                    required
+                  />
+                </div>
               </label>
 
               <button className="primary-btn login-submit" type="submit" disabled={busy}>
@@ -253,40 +256,103 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
 
             <div className="login-toggle-footer">
               {authMode === 'signin' ? (
-                <>Don't have an account? <button type="button" onClick={() => switchMode('signup')}>Create Account</button></>
+                <>Don&apos;t have an account? <button type="button" onClick={() => switchMode('signup')}>Create Account</button></>
               ) : (
                 <>Already have an account? <button type="button" onClick={() => switchMode('signin')}>Sign in</button></>
               )}
             </div>
-
-            <button className="demo-link" type="button" onClick={demo} disabled={busy}>
-              <Sparkles size={13} /> Use demo account
-            </button>
           </div>
         </section>
       </div>
 
-      <PasswordRecoveryModal
-        isOpen={recoveryOpen}
-        onClose={() => setRecoveryOpen(false)}
-        recoveryStep={recoveryStep}
-        setRecoveryStep={setRecoveryStep}
-        recoveryEmail={recoveryEmail}
-        setRecoveryEmail={setRecoveryEmail}
-        recoveryCode={recoveryCode}
-        setRecoveryCode={setRecoveryCode}
-        recoveryToken={recoveryToken}
-        setRecoveryToken={setRecoveryToken}
-        generatedResetLink={generatedResetLink}
-        emailSent={emailSent}
-        newPassword={newPassword}
-        setNewPassword={setNewPassword}
-        recoveryLoading={recoveryLoading}
-        recoveryError={recoveryError}
-        recoverySuccess={recoverySuccess}
-        onRequestCode={handleRequestCode}
-        onResetPassword={handleResetPassword}
-      />
+      {/* Password Reset Modal */}
+      {resetOpen && (
+        <div className="editorial-modal-backdrop" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) setResetOpen(false); }}>
+          <div className="editorial-modal" style={{ maxWidth: 420, borderRadius: 20, padding: '28px 28px 24px' }} role="dialog" aria-modal="true">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+              <div>
+                <div className="page-kicker" style={{ color: '#a9814c', letterSpacing: '0.08em', fontWeight: 700 }}>PASSWORD RECOVERY</div>
+                <h2 style={{ fontSize: 22, margin: '4px 0 6px', color: '#1d2233' }}>Forgot your password?</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setResetOpen(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, lineHeight: 1, color: '#666' }}
+                aria-label="Close"
+              >×</button>
+            </div>
+
+            <p style={{ fontSize: 12, color: '#5a6178', lineHeight: 1.5, margin: '0 0 16px' }}>
+              Enter your account email and we&apos;ll send a password reset link to your inbox.
+            </p>
+
+            {resetError && <div className="login-error" style={{ marginBottom: 14 }} role="alert">{resetError}</div>}
+
+            {resetSuccess ? (
+              <div style={{ padding: '12px 14px', borderRadius: 10, background: '#eef8f2', border: '1px solid #c8e8d4', color: '#1f6b43', fontSize: 12, fontWeight: 600, marginBottom: 16 }}>
+                ✓ {resetSuccess}
+              </div>
+            ) : (
+              <form onSubmit={handleSendReset}>
+                <label style={{ display: 'block', marginBottom: 16 }}>
+                  <span className="login-label" style={{ fontSize: 10, letterSpacing: '0.06em' }}>EMAIL ADDRESS</span>
+                  <div className="login-field" style={{ marginTop: 6 }}>
+                    <Mail size={15} />
+                    <input
+                      type="email"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      placeholder="name@example.com"
+                      required
+                    />
+                  </div>
+                </label>
+                <button
+                  className="primary-btn"
+                  type="submit"
+                  disabled={resetLoading}
+                  style={{ width: '100%', justifyContent: 'center', padding: '12px 16px', background: '#1f4333', color: '#fff', borderRadius: 24 }}
+                >
+                  {resetLoading ? 'Sending…' : <><span>Send reset link</span> <ArrowRight size={14} /></>}
+                </button>
+              </form>
+            )}
+
+            {resetSuccess && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+                <button
+                  className="primary-btn"
+                  type="button"
+                  onClick={() => setResetOpen(false)}
+                  style={{ background: '#1f4333', color: '#fff', borderRadius: 24, padding: '10px 20px' }}
+                >
+                  Done
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+/**
+ * Convert Firebase Auth error codes to human-friendly messages.
+ */
+function firebaseErrorMessage(err) {
+  const code = err?.code || '';
+  const messages = {
+    'auth/email-already-in-use': 'An account with this email already exists. Try signing in instead.',
+    'auth/invalid-email': 'Please enter a valid email address.',
+    'auth/weak-password': 'Password must be at least 6 characters.',
+    'auth/user-not-found': 'No account found with this email. Please register first.',
+    'auth/wrong-password': 'Incorrect password. Please try again.',
+    'auth/invalid-credential': 'Incorrect email or password. Please try again.',
+    'auth/too-many-requests': 'Too many failed attempts. Please wait a moment and try again.',
+    'auth/network-request-failed': 'Network error. Please check your connection and try again.',
+    'auth/popup-blocked': 'Google sign-in popup was blocked. Please allow popups for this site.',
+    'auth/user-disabled': 'This account has been disabled. Please contact support.',
+  };
+  return messages[code] || err?.message || null;
 }
