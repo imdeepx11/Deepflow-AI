@@ -8,7 +8,7 @@ import './workspace-sidebar.css';
 import './contact-modal-fix.css';
 import './login-premium.css';
 import Header from './components/Header';
-import { fetchApi } from './api';
+import { pingBackendRoot } from './api';
 import UploadModal from './components/UploadModal';
 
 import Login from './pages/Login';
@@ -48,20 +48,25 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(() => (localStorage.getItem('nexora_theme') || localStorage.getItem('deepflow_theme')) === 'dark');
   const [serverReady, setServerReady] = useState(false);
 
-  // Pre-warm the backend the moment the app loads so cold start
-  // happens in the background before the user tries to sign in.
+  // Pre-warm the backend the moment the app loads.
+  // Polls every 5 s until the server returns 200 OK (up to 90 s).
+  // Only then sets serverReady=true so sign-in buttons are safe to use.
   useEffect(() => {
     let cancelled = false;
     async function warmUp() {
-      try {
-        await fetchApi('/auth/ping-health', {}, 0).catch(() =>
-          fetchApi('/', {}, 0)
-        );
-      } catch (_) {
-        // ignore — server might still be waking; Login retries handle the rest
-      } finally {
-        if (!cancelled) setServerReady(true);
+      const MAX_ATTEMPTS = 18; // 18 × 5s = 90 seconds max
+      for (let i = 0; i < MAX_ATTEMPTS; i++) {
+        if (cancelled) return;
+        const ok = await pingBackendRoot();
+        if (ok) {
+          if (!cancelled) setServerReady(true);
+          return;
+        }
+        // Wait 5 seconds before next attempt
+        await new Promise((r) => setTimeout(r, 5000));
       }
+      // After 90s give up waiting and let user try anyway
+      if (!cancelled) setServerReady(true);
     }
     warmUp();
     return () => { cancelled = true; };

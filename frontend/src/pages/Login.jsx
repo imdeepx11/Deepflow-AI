@@ -137,7 +137,7 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode, serv
     setResetOpen(true);
   };
 
-  const busy = loading || googleLoading;
+  const busy = loading || googleLoading || !serverReady;
 
   return (
     <div className="login-page">

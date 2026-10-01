@@ -1,6 +1,24 @@
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
   || (import.meta.env.DEV ? '/api' : 'https://nexora-backend-30jt.onrender.com/api');
 
+// Root of the backend (no /api) — used only for health-check pings
+const BACKEND_ROOT = API_BASE.replace(/\/api$/, '');
+
+/**
+ * Ping the backend root endpoint to wake it from Render cold-start.
+ * Returns true if the server responded, false on timeout/network error.
+ */
+export async function pingBackendRoot() {
+  try {
+    const res = await fetch(`${BACKEND_ROOT}/`, {
+      method: 'GET',
+      signal: AbortSignal.timeout(8000),
+    });
+    return res.ok;
+  } catch (_) {
+    return false;
+  }
+}
 
 export async function fetchApi(endpoint, options = {}, retryCount = 0) {
   try {
