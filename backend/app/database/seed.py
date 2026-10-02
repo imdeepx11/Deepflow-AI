@@ -2,15 +2,66 @@ import os
 import hashlib
 from datetime import datetime, timedelta
 from app.database.database import engine, Base, SessionLocal
-from app.database.models import User, Document, DocumentAnalysis, Workflow, WorkflowStep, Approval, AuditLog
+from app.database.models import Organization, User, Document, DocumentAnalysis, Workflow, WorkflowStep, Approval, AuditLog
 from app.services.ai_service import AIService
 
 def hash_password(password: str) -> str:
     return hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), b'nexora_salt_2026', 100000).hex()
 
+def backfill_tenant_data(db):
+    """Assign existing users and workspace records to isolated organizations."""
+    users = db.query(User).order_by(User.id.asc()).all()
+
+    for user in users:
+        if not user.organization_id:
+            org = Organization(
+                name=f"{user.name or 'User'}'s Workspace",
+                slug=f"user-{user.id}",
+                settings={}
+            )
+            db.add(org)
+            db.flush()
+            user.organization_id = org.id
+
+    db.flush()
+    organizations = db.query(Organization).order_by(Organization.id.asc()).all()
+    default_org = organizations[0] if organizations else None
+
+    if not default_org:
+        default_org = Organization(name="NEXORA Workspace", slug="nexora-workspace", settings={})
+        db.add(default_org)
+        db.flush()
+
+    users = db.query(User).all()
+    for doc in db.query(Document).filter(Document.organization_id.is_(None)).all():
+        owner = next(
+            (
+                u for u in users
+                if (u.name and u.name.lower() == (doc.uploaded_by or "").lower())
+                or (u.email and u.email.lower() == (doc.uploaded_by or "").lower())
+            ),
+            None
+        )
+        doc.organization_id = owner.organization_id if owner and owner.organization_id else default_org.id
+
+    for workflow in db.query(Workflow).filter(Workflow.organization_id.is_(None)).all():
+        workflow.organization_id = workflow.document.organization_id if workflow.document else default_org.id
+
+    documents_by_name = {}
+    for doc in db.query(Document).all():
+        documents_by_name.setdefault(doc.original_filename, doc.organization_id)
+
+    for log in db.query(AuditLog).filter(AuditLog.organization_id.is_(None)).all():
+        log.organization_id = documents_by_name.get(log.document_name, default_org.id)
+
+    db.commit()
+
+
 def seed_db():
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
+
+    backfill_tenant_data(db)
 
     # Check if already seeded
     if db.query(Document).count() > 0:
@@ -20,14 +71,25 @@ def seed_db():
 
     print("Seeding database with enterprise demo documents...")
 
-    # Create admin user
+    # Create the demo organization and administrator only for a fresh database.
+    demo_org = db.query(Organization).filter(Organization.slug == "nexora-demo").first()
+    if not demo_org:
+        demo_org = Organization(
+            name="NEXORA Demo Workspace",
+            slug="nexora-demo",
+            settings={}
+        )
+        db.add(demo_org)
+        db.flush()
+
     user = User(
         name="Demo Administrator",
         email="demo@nexora.ai",
         password_hash=hash_password("demo123"),
         role="Admin",
         department="Operations",
-        avatar=""
+        avatar="",
+        organization_id=demo_org.id
     )
     db.add(user)
     db.commit()
@@ -78,7 +140,8 @@ def seed_db():
             priority=priority,
             confidence=0.94 if idx % 2 == 0 else 0.91,
             uploaded_by=uploaded_by,
-            created_at=doc_time
+            created_at=doc_time,
+            organization_id=demo_org.id
         )
         db.add(doc)
         db.commit()
@@ -114,7 +177,8 @@ def seed_db():
             description=f"Automated AI routing workflow for {fname}",
             status="Completed" if status == "Approved" else "Active",
             current_step_index=4 if status == "Approved" else 3,
-            created_at=doc_time
+            created_at=doc_time,
+            organization_id=demo_org.id
         )
         db.add(wf)
         db.commit()
@@ -149,7 +213,8 @@ def seed_db():
             document_name=fname,
             workflow_name=wf.name,
             status="Success",
-            details=f"Uploaded file {fname} ({fsize} bytes)"
+            details=f"Uploaded file {fname} ({fsize} bytes)",
+            organization_id=demo_org.id
         )
         log2 = AuditLog(
             timestamp=doc_time + timedelta(seconds=45),
@@ -159,7 +224,8 @@ def seed_db():
             document_name=fname,
             workflow_name=wf.name,
             status="Success",
-            details=f"AI Classified as {analysis.document_type} ({int(analysis.confidence * 100)}% confidence)"
+            details=f"AI Classified as {analysis.document_type} ({int(analysis.confidence * 100)}% confidence)",
+            organization_id=demo_org.id
         )
         db.add(log1)
         db.add(log2)
@@ -173,7 +239,8 @@ def seed_db():
                 document_name=fname,
                 workflow_name=wf.name,
                 status="Success",
-                details="Approved invoice payout after standard risk verification."
+                details="Approved invoice payout after standard risk verification.",
+                organization_id=demo_org.id
             )
             db.add(log3)
 
