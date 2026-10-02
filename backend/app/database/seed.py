@@ -11,6 +11,8 @@ def hash_password(password: str) -> str:
 def backfill_tenant_data(db):
     """Assign existing users and workspace records to isolated organizations."""
     users = db.query(User).order_by(User.id.asc()).all()
+    if not users and db.query(Document).count() == 0 and db.query(Workflow).count() == 0 and db.query(AuditLog).count() == 0:
+        return
 
     for user in users:
         if not user.organization_id:
