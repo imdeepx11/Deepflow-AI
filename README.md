@@ -32,9 +32,6 @@
 - **Backend API (Render)**: [https://nexora-backend-30jt.onrender.com](https://nexora-backend-30jt.onrender.com)
 - **FastAPI Interactive Docs**: [https://nexora-backend-30jt.onrender.com/docs](https://nexora-backend-30jt.onrender.com/docs)
 
-### 🔑 Instant Demo Account Credentials
-- **Email**: `demo@nexora.ai`
-- **Password**: `demo123`
 
 ---
 
@@ -43,6 +40,10 @@
 **NEXORA AI** is an enterprise-grade web application that demonstrates end-to-end **Intelligent Document Processing (IDP)**, **Business Process Management (BPM)**, and **AI-Assisted Decision Support**.
 
 Upload any business document — invoice, contract, purchase order, or resume — and watch the AI pipeline classify it, extract structured data, assess risk, assign priority, recommend an action, and route it through an automated approval workflow with full audit trail.
+
+### Workspace Isolation
+
+NEXORA AI now uses tenant-scoped persistence. A verified Firebase identity is mapped to a backend user and an isolated organization/workspace. All document reads and writes are filtered by that workspace, and related workflows, analytics, audit logs, AI document chat, and workspace configuration use the same tenant boundary. Uploaded files are no longer exposed through a public static `/uploads` route; file access requires an authenticated request for a document in the current workspace.
 
 ```
 PDF / DOCX / TXT Upload
@@ -74,6 +75,8 @@ Immutable Audit Log & Analytics Dashboard
 | **Audit Logs** | Immutable compliance event stream with filtering by action type, user, and timestamp |
 | **AI Providers** | Built-in demo mode (no API key required), Google Gemini, and OpenAI GPT-4o support |
 | **Enterprise UI** | Clean white + emerald green theme, responsive layout, Lucide icons, Recharts visualizations |
+| **Multi-Tenant Workspaces** | Every verified Firebase account receives an isolated workspace; documents, workflows, analytics, audit logs, AI document access, and workspace settings are scoped to that tenant |
+| **Protected File Storage** | Uploaded files are stored under tenant-specific directories and are only served through authenticated, tenant-scoped API access |
 
 ---
 
@@ -184,12 +187,12 @@ Open **http://localhost:5173** in your browser.
 
 ---
 
-## Demo Walkthrough
+## Walkthrough
 
-1. **Login** → Click "Use Demo Account" for instant access
-2. **Dashboard** → Show executive KPIs, 30-day volume chart, and recent documents
-3. **Documents** → Browse the pre-seeded document library
-4. **Upload** → Upload a sample PDF invoice
+1. **Register / Sign in** → Use a verified Firebase email account or Google sign-in
+2. **Dashboard** → Show workspace-scoped KPIs and recent documents
+3. **Documents** → Browse only documents belonging to the signed-in workspace
+4. **Upload** → Upload a sample PDF invoice into the current workspace
 5. **AI Analyzer** → Click "Analyze with AI" and walk through:
    - Document classification with confidence score
    - Extracted fields (vendor, invoice number, amounts, dates, payment status)
@@ -199,7 +202,7 @@ Open **http://localhost:5173** in your browser.
 6. **Approval** → Submit an approval decision with comments
 7. **Workflows** → Observe the workflow timeline update
 8. **Analytics** → Show process intelligence and bottleneck insights
-9. **Audit Logs** → Demonstrate the immutable compliance trail
+9. **Audit Logs** → Demonstrate the workspace-scoped compliance trail
 
 ---
 
