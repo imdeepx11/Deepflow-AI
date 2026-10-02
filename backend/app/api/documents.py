@@ -13,7 +13,9 @@ from app.services.document_processor import DocumentProcessor
 from app.services.ai_service import AIService
 from app.services.audit import create_audit_log
 
-router = APIRouter(prefix="/api/documents", tags=["documents"])
+from app.api.auth import require_auth
+
+router = APIRouter(prefix="/api/documents", tags=["documents"], dependencies=[Depends(require_auth)])
 
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
