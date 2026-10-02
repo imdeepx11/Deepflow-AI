@@ -4,7 +4,9 @@ from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.database.models import AuditLog
 
-router = APIRouter(prefix="/api/audit-logs", tags=["audit_logs"])
+from app.api.auth import require_auth
+
+router = APIRouter(prefix="/api/audit-logs", tags=["audit_logs"], dependencies=[Depends(require_auth)])
 
 @router.get("")
 def list_audit_logs(
