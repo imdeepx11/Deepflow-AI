@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from app.database.database import get_db
-from app.database.models import Document, DocumentAnalysis, Workflow, WorkflowStep, Approval
+from app.database.models import Document, DocumentAnalysis, Workflow, WorkflowStep, Approval, User
 from app.services.document_processor import DocumentProcessor
 from app.services.ai_service import AIService
 from app.services.audit import create_audit_log
@@ -60,9 +60,10 @@ def list_documents(
     priority: Optional[str] = None,
     search: Optional[str] = None,
     uploaded_by: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_auth)
 ):
-    query = db.query(Document)
+    query = db.query(Document).filter(Document.organization_id == current_user.organization_id)
     if uploaded_by and uploaded_by != "All" and "demo" not in uploaded_by.lower() and "admin" not in uploaded_by.lower():
         query = query.filter(Document.uploaded_by.ilike(f"%{uploaded_by}%"))
     if doc_type and doc_type != "All":
@@ -79,8 +80,11 @@ def list_documents(
 
 
 @router.get("/{doc_id}")
-def get_document(doc_id: int, db: Session = Depends(get_db)):
-    doc = db.query(Document).filter(Document.id == doc_id).first()
+def get_document(doc_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_auth)):
+    doc = db.query(Document).filter(
+        Document.id == doc_id,
+        Document.organization_id == current_user.organization_id
+    ).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
@@ -160,16 +164,19 @@ def get_document(doc_id: int, db: Session = Depends(get_db)):
 @router.post("/upload")
 async def upload_document(
     file: UploadFile = File(...),
-    uploaded_by: str = Form("Admin"),
-    db: Session = Depends(get_db)
+    uploaded_by: str = Form(""),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_auth)
 ):
     valid_exts = [".pdf", ".docx", ".doc", ".txt"]
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in valid_exts:
         raise HTTPException(status_code=400, detail=f"Unsupported file format {ext}. Allowed: PDF, DOCX, TXT")
 
-    saved_filename = f"{uuid.uuid4().hex}_{file.filename}"
-    file_path = os.path.join(UPLOAD_DIR, saved_filename)
+    org_upload_dir = os.path.join(UPLOAD_DIR, str(current_user.organization_id))
+    os.makedirs(org_upload_dir, exist_ok=True)
+    saved_filename = f"{uuid.uuid4().hex}_{os.path.basename(file.filename)}"
+    file_path = os.path.join(org_upload_dir, saved_filename)
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
@@ -182,22 +189,27 @@ async def upload_document(
         extracted_text=DocumentProcessor.extract_text(file_path, ext),
         status="Uploaded",
         priority="Medium",
-        uploaded_by=uploaded_by
+        uploaded_by=current_user.name,
+        organization_id=current_user.organization_id
     )
     db.add(doc)
     db.commit()
     db.refresh(doc)
 
     create_audit_log(
-        db, user_name=uploaded_by, user_role="Admin", action="Uploaded Document",
-        details=f"Uploaded file {doc.original_filename} ({doc.file_size} bytes)", document_name=doc.original_filename
+        db, user_name=current_user.name, user_role=current_user.role, action="Uploaded Document",
+        details=f"Uploaded file {doc.original_filename} ({doc.file_size} bytes)",
+        document_name=doc.original_filename, organization_id=current_user.organization_id
     )
     return {"message": "Document uploaded successfully", "id": doc.id}
 
 
 @router.post("/{doc_id}/analyze")
-def analyze_document(doc_id: int, db: Session = Depends(get_db)):
-    doc = db.query(Document).filter(Document.id == doc_id).first()
+def analyze_document(doc_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_auth)):
+    doc = db.query(Document).filter(
+        Document.id == doc_id,
+        Document.organization_id == current_user.organization_id
+    ).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
@@ -266,14 +278,19 @@ def analyze_document(doc_id: int, db: Session = Depends(get_db)):
     create_audit_log(
         db, user_name="AI Engine", user_role="System", action="Analyzed Document",
         details=f"AI Classified as {analysis.document_type} ({int(analysis.confidence * 100)}% confidence). Risk Level: {analysis.risk_level}",
-        document_name=doc.original_filename, workflow_name=f"{analysis.document_type} Routing Workflow"
+        document_name=doc.original_filename,
+        workflow_name=f"{analysis.document_type} Routing Workflow",
+        organization_id=current_user.organization_id
     )
     return {"message": "Analysis completed successfully", "doc_id": doc.id}
 
 
 @router.post("/{doc_id}/approve")
-def approve_document(doc_id: int, req: ApprovalRequest, db: Session = Depends(get_db)):
-    doc = db.query(Document).filter(Document.id == doc_id).first()
+def approve_document(doc_id: int, req: ApprovalRequest, db: Session = Depends(get_db), current_user: User = Depends(require_auth)):
+    doc = db.query(Document).filter(
+        Document.id == doc_id,
+        Document.organization_id == current_user.organization_id
+    ).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
@@ -310,24 +327,37 @@ def approve_document(doc_id: int, req: ApprovalRequest, db: Session = Depends(ge
         db, user_name=req.approver_name, user_role=req.approver_role, action=action_label,
         details=f"{action_label} by {req.approver_name} ({req.approver_role}). Comments: {req.comments or 'None'}",
         status="Success" if req.action == "Approve" else "Warning",
-        document_name=doc.original_filename, workflow_name=doc.workflows[0].name if doc.workflows else None
+        document_name=doc.original_filename,
+        workflow_name=doc.workflows[0].name if doc.workflows else None,
+        organization_id=current_user.organization_id
     )
 
     return {"message": f"Document {req.action.lower()}d successfully"}
 
 
 @router.delete("/{doc_id}")
-def delete_document(doc_id: int, deleted_by: str = "System", db: Session = Depends(get_db)):
-    doc = db.query(Document).filter(Document.id == doc_id).first()
+def delete_document(doc_id: int, deleted_by: str = "System", db: Session = Depends(get_db), current_user: User = Depends(require_auth)):
+    doc = db.query(Document).filter(
+        Document.id == doc_id,
+        Document.organization_id == current_user.organization_id
+    ).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
     filename = doc.original_filename
+    storage_path = doc.storage_path
     db.delete(doc)
     db.commit()
 
+    if storage_path and os.path.abspath(storage_path).startswith(os.path.abspath(UPLOAD_DIR) + os.sep) and os.path.exists(storage_path):
+        try:
+            os.remove(storage_path)
+        except OSError:
+            pass
+
     create_audit_log(
-        db, user_name=deleted_by, user_role="Admin", action="Deleted Document",
-        details=f"Document {filename} removed from system.", status="Warning", document_name=filename
+        db, user_name=current_user.name, user_role=current_user.role, action="Deleted Document",
+        details=f"Document {filename} removed from system.", status="Warning",
+        document_name=filename, organization_id=current_user.organization_id
     )
     return {"message": "Document deleted successfully"}
