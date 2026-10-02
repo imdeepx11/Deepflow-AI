@@ -1,6 +1,9 @@
 import os
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from app.database.database import get_db
+from app.database.models import User
 
 from app.api.auth import require_auth
 
@@ -29,27 +32,50 @@ class UpdateSettingsRequest(BaseModel):
     gemini_api_key: str = None
 
 @router.get("")
-def get_settings():
-    CONFIG["openai_key_set"] = bool(os.getenv("OPENAI_API_KEY"))
-    CONFIG["gemini_key_set"] = bool(os.getenv("GEMINI_API_KEY"))
-    return CONFIG
+def get_settings(db: Session = Depends(get_db), current_user: User = Depends(require_auth)):
+    stored = current_user.organization.settings if current_user.organization else {}
+    config = {
+        **CONFIG,
+        **(stored or {}),
+        "openai_key_set": bool(os.getenv("OPENAI_API_KEY")),
+        "gemini_key_set": bool(os.getenv("GEMINI_API_KEY")),
+    }
+    return config
+
 
 @router.post("")
-def update_settings(req: UpdateSettingsRequest):
-    CONFIG["provider"] = req.provider.lower()
-    CONFIG["temperature"] = req.temperature
-    CONFIG["confidence_threshold"] = req.confidence_threshold
-    CONFIG["default_sla_hours"] = req.default_sla_hours
-    CONFIG["approval_threshold_amount"] = req.approval_threshold_amount
-    CONFIG["auto_routing_enabled"] = req.auto_routing_enabled
+def update_settings(
+    req: UpdateSettingsRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_auth)
+):
+    organization = current_user.organization
+    if not organization:
+        raise HTTPException(status_code=500, detail="Workspace is not configured for this account.")
+
+    workspace_config = {
+        "provider": req.provider.lower(),
+        "temperature": req.temperature,
+        "confidence_threshold": req.confidence_threshold,
+        "default_sla_hours": req.default_sla_hours,
+        "approval_threshold_amount": req.approval_threshold_amount,
+        "auto_routing_enabled": req.auto_routing_enabled,
+    }
+    organization.settings = workspace_config
+    db.commit()
+    db.refresh(organization)
 
     if req.openai_api_key:
         os.environ["OPENAI_API_KEY"] = req.openai_api_key
-        CONFIG["openai_key_set"] = True
     if req.gemini_api_key:
         os.environ["GEMINI_API_KEY"] = req.gemini_api_key
-        CONFIG["gemini_key_set"] = True
 
-    os.environ["AI_PROVIDER"] = CONFIG["provider"]
-
-    return {"message": "Settings updated successfully", "config": CONFIG}
+    # Environment keys remain server-wide; workspace workflow configuration is tenant-scoped.
+    return {
+        "message": "Workspace settings updated successfully",
+        "config": {
+            **workspace_config,
+            "openai_key_set": bool(os.getenv("OPENAI_API_KEY")),
+            "gemini_key_set": bool(os.getenv("GEMINI_API_KEY")),
+        }
+    }
