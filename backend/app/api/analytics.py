@@ -3,7 +3,9 @@ from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.database.models import Document, DocumentAnalysis, Workflow, AuditLog
 
-router = APIRouter(prefix="/api/analytics", tags=["analytics"])
+from app.api.auth import require_auth
+
+router = APIRouter(prefix="/api/analytics", tags=["analytics"], dependencies=[Depends(require_auth)])
 
 @router.get("")
 def get_analytics(days: int = 30, db: Session = Depends(get_db)):
