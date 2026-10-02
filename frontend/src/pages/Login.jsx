@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, CheckCircle2, Lock, Mail, Moon, Sparkles, Sun, User as UserIcon } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Eye, EyeOff, Lock, Mail, Moon, Sparkles, Sun, User as UserIcon } from 'lucide-react';
 import {
   registerWithEmail,
   loginWithEmail,
   signInWithGoogle,
   sendFirebasePasswordReset,
+  sendFirebaseEmailVerification,
+  firebaseSignOut,
 } from '../firebase-client';
 import { api, pingBackendRoot } from '../api';
 import GoogleMark from '../components/GoogleMark';
@@ -18,6 +20,7 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // UI states
   const [loading, setLoading] = useState(false);
@@ -43,25 +46,6 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
   };
 
   /**
-   * Quick Demo Login
-   */
-  const handleDemoLogin = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      const res = await api.login({ email: 'demo@nexora.ai', password: 'demo123' });
-      if (res && res.user) {
-        onLoginSuccess(res.user);
-        return;
-      }
-    } catch (err) {
-      setError(err?.message || 'Demo login failed. Please ensure the backend is running.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /**
    * Email + Password Register
    */
   const handleRegister = async (e) => {
@@ -74,18 +58,13 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
 
     setLoading(true);
     try {
-      try {
-        const result = await registerWithEmail(name.trim(), norm, password);
-        await syncWithBackend(result);
-        return;
-      } catch (fbErr) {
-        const res = await api.register({ name: name.trim(), email: norm, password });
-        if (res && res.user) {
-          onLoginSuccess(res.user);
-          return;
-        }
-        throw fbErr;
-      }
+      const result = await registerWithEmail(name.trim(), norm, password);
+      await sendFirebaseEmailVerification();
+      await firebaseSignOut();
+      setPassword('');
+      setError('Account created. Please verify your email from the verification link we sent before signing in.');
+      setAuthMode('signin');
+      return;
     } catch (err) {
       const msg = err.message?.includes('already') || err.message?.includes('Password')
         ? err.message
@@ -108,18 +87,14 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
 
     setLoading(true);
     try {
-      try {
-        const result = await loginWithEmail(norm, password);
-        await syncWithBackend(result);
+      const result = await loginWithEmail(norm, password);
+      if (!result.user.emailVerified) {
+        await firebaseSignOut();
+        setError('Please verify your email address before signing in. Check your inbox for the verification link.');
         return;
-      } catch (fbErr) {
-        const res = await api.login({ email: norm, password });
-        if (res && res.user) {
-          onLoginSuccess(res.user);
-          return;
-        }
-        throw fbErr;
       }
+      await syncWithBackend(result);
+      return;
     } catch (err) {
       const msg = err.message?.includes('Invalid') || err.message?.includes('password') || err.message?.includes('Account')
         ? err.message
@@ -229,16 +204,6 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
                 <span>{googleLoading ? 'Connecting to Google…' : 'Continue with Google'}</span>
               </button>
 
-              <button
-                className="google-login"
-                type="button"
-                onClick={handleDemoLogin}
-                disabled={busy}
-                style={{ marginTop: 0 }}
-              >
-                <Sparkles size={16} />
-                <span>Use Demo Account (Instant Access)</span>
-              </button>
             </div>
 
             <div className="login-divider">
@@ -289,10 +254,10 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
                     </button>
                   )}
                 </div>
-                <div className="login-field">
+                <div className="login-field password-field">
                   <Lock size={15} />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="At least 6 characters"
@@ -300,6 +265,15 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
                     minLength={6}
                     required
                   />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    onClick={() => setShowPassword((value) => !value)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
               </label>
 
