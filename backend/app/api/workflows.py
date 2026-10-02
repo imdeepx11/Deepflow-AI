@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database.database import get_db
-from app.database.models import Workflow, WorkflowStep, Document, AuditLog
+from app.database.models import Workflow, WorkflowStep, Document, AuditLog, User
 
 from app.api.auth import require_auth
 
@@ -22,8 +22,10 @@ class CreateWorkflowRequest(BaseModel):
     steps: List[StepSchema] = []
 
 @router.get("")
-def list_workflows(db: Session = Depends(get_db)):
-    wfs = db.query(Workflow).order_by(Workflow.created_at.desc()).all()
+def list_workflows(db: Session = Depends(get_db), current_user: User = Depends(require_auth)):
+    wfs = db.query(Workflow).filter(
+        Workflow.organization_id == current_user.organization_id
+    ).order_by(Workflow.created_at.desc()).all()
     out = []
     for w in wfs:
         doc_name = w.document.original_filename if w.document else "Template Workflow"
@@ -63,8 +65,11 @@ def get_workflow_templates():
     ]
 
 @router.get("/{wf_id}")
-def get_workflow(wf_id: int, db: Session = Depends(get_db)):
-    w = db.query(Workflow).filter(Workflow.id == wf_id).first()
+def get_workflow(wf_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_auth)):
+    w = db.query(Workflow).filter(
+        Workflow.id == wf_id,
+        Workflow.organization_id == current_user.organization_id
+    ).first()
     if not w:
         raise HTTPException(status_code=404, detail="Workflow not found")
     
@@ -95,12 +100,13 @@ def get_workflow(wf_id: int, db: Session = Depends(get_db)):
     }
 
 @router.post("")
-def create_workflow(req: CreateWorkflowRequest, db: Session = Depends(get_db)):
+def create_workflow(req: CreateWorkflowRequest, db: Session = Depends(get_db), current_user: User = Depends(require_auth)):
     wf = Workflow(
         name=req.name,
         description=req.description or "User created workflow definition",
         status="Active",
-        current_step_index=0
+        current_step_index=0,
+        organization_id=current_user.organization_id
     )
     db.add(wf)
     db.commit()
@@ -123,7 +129,8 @@ def create_workflow(req: CreateWorkflowRequest, db: Session = Depends(get_db)):
         action="Created Workflow Template",
         workflow_name=req.name,
         status="Success",
-        details=f"Created custom workflow '{req.name}' with {len(req.steps)} steps."
+        details=f"Created custom workflow '{req.name}' with {len(req.steps)} steps.",
+        organization_id=current_user.organization_id
     )
     db.add(log)
     db.commit()
