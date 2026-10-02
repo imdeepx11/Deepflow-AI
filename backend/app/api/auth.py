@@ -258,11 +258,13 @@ def google_login(req: GoogleLoginRequest, request: Request, db: Session = Depend
                 raise HTTPException(status_code=403, detail="Please verify your email address before signing in.")
             verified_email = (decoded.get("email") or "").strip().lower() or None
             verified_name = decoded.get("name") or decoded.get("display_name") or None
-        except Exception as e:
-            # Token invalid / expired — reject the request
+        except HTTPException:
+            raise
+        except Exception:
+            # Token invalid / expired — reject the request without leaking verifier details.
             raise HTTPException(
                 status_code=401,
-                detail=f"Google sign-in failed: invalid or expired token. Please try again. ({e})"
+                detail="Google sign-in failed: invalid or expired token. Please try again."
             )
     else:
         raise HTTPException(
