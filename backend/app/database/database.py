@@ -49,6 +49,16 @@ def ensure_schema():
                 if column not in existing:
                     conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {sql_type}"))
 
+        indexes = {
+            "ix_users_firebase_uid": "users(firebase_uid)",
+            "ix_users_organization_id": "users(organization_id)",
+            "ix_documents_organization_id": "documents(organization_id)",
+            "ix_workflows_organization_id": "workflows(organization_id)",
+            "ix_audit_logs_organization_id": "audit_logs(organization_id)",
+        }
+        for index_name, target in indexes.items():
+            conn.execute(text(f"CREATE INDEX IF NOT EXISTS {index_name} ON {target}"))
+
 
 def get_db():
     db = SessionLocal()
