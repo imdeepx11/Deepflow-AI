@@ -10,7 +10,8 @@ def create_audit_log(
     details: str,
     status: str = "Success",
     document_name: Optional[str] = None,
-    workflow_name: Optional[str] = None
+    workflow_name: Optional[str] = None,
+    organization_id: Optional[int] = None
 ) -> None:
     """Helper to record audit logs cleanly with error handling."""
     try:
@@ -21,7 +22,8 @@ def create_audit_log(
             status=status,
             details=details,
             document_name=document_name,
-            workflow_name=workflow_name
+            workflow_name=workflow_name,
+            organization_id=organization_id
         )
         db.add(entry)
         db.commit()
