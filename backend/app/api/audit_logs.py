@@ -2,7 +2,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.database.database import get_db
-from app.database.models import AuditLog
+from app.database.models import AuditLog, User
 
 from app.api.auth import require_auth
 
@@ -14,9 +14,10 @@ def list_audit_logs(
     action: Optional[str] = None,
     status: Optional[str] = None,
     search: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_auth)
 ):
-    query = db.query(AuditLog)
+    query = db.query(AuditLog).filter(AuditLog.organization_id == current_user.organization_id)
 
     if user_name and user_name != "All":
         query = query.filter(AuditLog.user_name == user_name)
