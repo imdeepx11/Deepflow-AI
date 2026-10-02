@@ -1,21 +1,25 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.database.database import get_db
-from app.database.models import Document, DocumentAnalysis, Workflow, AuditLog
+from app.database.models import Document, DocumentAnalysis, Workflow, AuditLog, User
 
 from app.api.auth import require_auth
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"], dependencies=[Depends(require_auth)])
 
 @router.get("")
-def get_analytics(days: int = 30, db: Session = Depends(get_db)):
-    total_docs = db.query(Document).count()
-    pending_docs = db.query(Document).filter(Document.status == "Pending Approval").count()
-    high_priority = db.query(Document).filter(Document.priority.in_(["HIGH", "High", "CRITICAL", "Critical"])).count()
-    approved_docs = db.query(Document).filter(Document.status == "Approved").count()
-    rejected_docs = db.query(Document).filter(Document.status == "Rejected").count()
-    under_review_docs = db.query(Document).filter(Document.status == "Under Review").count()
-    processed_docs = db.query(Document).filter(Document.status == "Processed").count()
+def get_analytics(days: int = 30, db: Session = Depends(get_db), current_user: User = Depends(require_auth)):
+    tenant = current_user.organization_id
+    total_docs = db.query(Document).filter(Document.organization_id == tenant).count()
+    pending_docs = db.query(Document).filter(Document.organization_id == tenant, Document.status == "Pending Approval").count()
+    high_priority = db.query(Document).filter(
+        Document.organization_id == tenant,
+        Document.priority.in_(["HIGH", "High", "CRITICAL", "Critical"])
+    ).count()
+    approved_docs = db.query(Document).filter(Document.organization_id == tenant, Document.status == "Approved").count()
+    rejected_docs = db.query(Document).filter(Document.organization_id == tenant, Document.status == "Rejected").count()
+    under_review_docs = db.query(Document).filter(Document.organization_id == tenant, Document.status == "Under Review").count()
+    processed_docs = db.query(Document).filter(Document.organization_id == tenant, Document.status == "Processed").count()
 
     total_safe = max(total_docs, 1)
 
