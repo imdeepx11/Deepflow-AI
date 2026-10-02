@@ -303,3 +303,226 @@
   .ledger-quote blockquote { font-size: 25px !important; }
   .developer-credit { font-size: 12px !important; }
 }
+
+
+/* 90% browser-zoom equivalent — keep the desktop canvas compact at 100% */
+@media (min-width: 1100px) {
+  /* The reference layout is intentionally tuned to the visual density of a 90% browser view. */
+  .workspace-sidebar {
+    width: 198px !important;
+    padding: 20px 11px 13px !important;
+  }
+  .sidebar-brand {
+    padding: 0 6px 16px !important;
+    gap: 8px !important;
+  }
+  .sidebar-brand .brand-name {
+    font-size: 31px !important;
+  }
+  .sidebar-brand .brand-subtitle {
+    margin-top: 7px !important;
+    font-size: 10px !important;
+  }
+  .sidebar-section-label {
+    padding: 0 9px 5px !important;
+    font-size: 11px !important;
+  }
+  .sidebar-nav-link {
+    min-height: 39px !important;
+    padding: 0 9px !important;
+    gap: 8px !important;
+    font-size: 16px !important;
+  }
+  .sidebar-credit {
+    font-size: 10px !important;
+  }
+
+  .editorial-header {
+    margin-left: 198px !important;
+  }
+  .editorial-header-inner {
+    width: calc(100% - 26px) !important;
+    min-height: 65px !important;
+    margin: 0 13px !important;
+    gap: 10px !important;
+  }
+  .topbar-page-context {
+    min-width: 140px !important;
+  }
+  .topbar-current {
+    font-size: 22px !important;
+  }
+  .topbar-kicker {
+    font-size: 9px !important;
+  }
+  .editorial-header .header-search {
+    width: min(300px, 31vw) !important;
+    flex-basis: 300px !important;
+  }
+  .header-search input {
+    height: 36px !important;
+    font-size: 13px !important;
+  }
+  .header-icon-btn,
+  .header-user-btn,
+  .contact-btn {
+    height: 36px !important;
+  }
+  .header-icon-btn {
+    width: 36px !important;
+  }
+  .contact-btn {
+    font-size: 13px !important;
+    padding-inline: 9px !important;
+  }
+  .user-copy strong { font-size: 12px !important; }
+  .user-copy span { font-size: 10px !important; }
+
+  .editorial-main {
+    width: calc(100% - 222px) !important;
+    margin-left: 211px !important;
+    margin-right: 11px !important;
+    padding: 22px 0 52px !important;
+  }
+
+  .ledger-hero {
+    padding: 16px 0 17px !important;
+    gap: 18px !important;
+  }
+  .ledger-hero-title {
+    font-size: clamp(45px, 3.8vw, 59px) !important;
+    line-height: 1.03 !important;
+  }
+  .ledger-hero .page-intro {
+    font-size: 15px !important;
+    margin-top: 5px !important;
+  }
+  .page-kicker,
+  .stamp-label {
+    font-size: 11px !important;
+  }
+  .dashboard-upload-btn {
+    min-height: 45px !important;
+    padding: 11px 18px !important;
+    font-size: 14px !important;
+  }
+
+  .ledger-overview {
+    grid-template-columns: 224px minmax(0, 1fr) !important;
+  }
+  .ledger-stamp-card {
+    min-height: 286px !important;
+    padding: 20px 20px !important;
+  }
+  .stamp-circle {
+    width: 132px !important;
+    height: 132px !important;
+    margin: 7px auto 14px !important;
+  }
+  .stamp-circle strong {
+    font-size: 40px !important;
+  }
+  .ledger-stamp-card p {
+    padding-top: 12px !important;
+    font-size: 12px !important;
+    line-height: 1.5 !important;
+  }
+  .ledger-row {
+    min-height: 65px !important;
+    padding: 10px 20px !important;
+  }
+  .ledger-row-label {
+    font-size: 16px !important;
+  }
+  .ledger-row-right {
+    gap: 7px !important;
+  }
+  .ledger-value {
+    font-size: 34px !important;
+  }
+  .ledger-delta {
+    font-size: 12px !important;
+    padding: 3px 7px !important;
+  }
+
+  .ledger-chart-grid {
+    grid-template-columns: 1.55fr 1fr !important;
+  }
+  .ledger-panel {
+    min-height: 266px !important;
+    padding: 20px !important;
+  }
+  .card-title {
+    font-size: 25px !important;
+  }
+  .card-subtitle {
+    font-size: 13px !important;
+  }
+  .ledger-chart {
+    height: 160px !important;
+    margin-top: 7px !important;
+  }
+  .ledger-donut-content {
+    gap: 13px !important;
+    margin-top: 9px !important;
+  }
+  .ledger-donut-wrap {
+    width: 130px !important;
+    height: 130px !important;
+    flex-basis: 130px !important;
+  }
+  .ledger-donut-center strong {
+    font-size: 31px !important;
+  }
+  .ledger-tally {
+    gap: 5px !important;
+    min-width: 135px !important;
+  }
+  .ledger-tally-row {
+    font-size: 13px !important;
+  }
+
+  .ledger-table-panel {
+    padding: 20px 20px 9px !important;
+  }
+  .editorial-table {
+    font-size: 13px !important;
+  }
+  .editorial-table th {
+    font-size: 10px !important;
+  }
+  .editorial-table td {
+    padding: 10px 8px !important;
+  }
+  .doc-name {
+    font-size: 13px !important;
+  }
+  .doc-meta {
+    font-size: 10px !important;
+  }
+  .pill {
+    font-size: 10px !important;
+    padding: 4px 7px !important;
+  }
+
+  .ledger-lower-grid {
+    grid-template-columns: 1.25fr .75fr !important;
+  }
+  .ledger-note-card {
+    min-height: 174px !important;
+    padding: 18px 20px !important;
+  }
+  .insight-item strong {
+    font-size: 14px !important;
+  }
+  .insight-item p {
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+  }
+  .ledger-quote blockquote {
+    font-size: 22px !important;
+  }
+  .developer-credit {
+    font-size: 10px !important;
+  }
+}
