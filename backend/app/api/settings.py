@@ -1,8 +1,10 @@
 import os
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-router = APIRouter(prefix="/api/settings", tags=["settings"])
+from app.api.auth import require_auth
+
+router = APIRouter(prefix="/api/settings", tags=["settings"], dependencies=[Depends(require_auth)])
 
 # Global runtime config state
 CONFIG = {
