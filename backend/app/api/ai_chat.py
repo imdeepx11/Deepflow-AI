@@ -6,7 +6,9 @@ from app.database.database import get_db
 from app.database.models import Document
 from app.services.ai_service import AIService
 
-router = APIRouter(prefix="/api/ai", tags=["ai"])
+from app.api.auth import require_auth
+
+router = APIRouter(prefix="/api/ai", tags=["ai"], dependencies=[Depends(require_auth)])
 
 class ChatRequest(BaseModel):
     document_id: str
