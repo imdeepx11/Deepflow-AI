@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from app.database.database import get_db
 from app.database.models import Document, DocumentAnalysis, Workflow, AuditLog, User
 
@@ -56,14 +57,22 @@ def get_analytics(days: int = 30, db: Session = Depends(get_db), current_user: U
         {"name": "Processed", "count": processed_docs, "percentage": f"{int((processed_docs/total_safe)*100)}%", "color": "#94A3B8"}
     ]
 
-    # Document Type breakdown
+    # Document Type breakdown, scoped to the active workspace.
+    type_rows = (
+        db.query(DocumentAnalysis.document_type, func.count(Document.id))
+        .join(Document, DocumentAnalysis.document_id == Document.id)
+        .filter(Document.organization_id == tenant)
+        .group_by(DocumentAnalysis.document_type)
+        .order_by(func.count(Document.id).desc())
+        .all()
+    )
     type_breakdown = [
-        {"type": "Invoice", "count": 48, "percentage": "37.5%"},
-        {"type": "Purchase Order", "count": 28, "percentage": "21.8%"},
-        {"type": "Contract", "count": 19, "percentage": "14.8%"},
-        {"type": "Resume", "count": 15, "percentage": "11.7%"},
-        {"type": "Loan Application", "count": 11, "percentage": "8.6%"},
-        {"type": "Other", "count": 7, "percentage": "5.6%"}
+        {
+            "type": document_type or "Other",
+            "count": count,
+            "percentage": f"{int((count / total_safe) * 100)}%"
+        }
+        for document_type, count in type_rows
     ]
 
     # Process Intelligence Insights
