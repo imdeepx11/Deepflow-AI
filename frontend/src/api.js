@@ -77,7 +77,7 @@ export const api = {
     return fetchApi(`/documents${query ? `?${query}` : ''}`);
   },
   getDocument: (id) => fetchApi(`/documents/${id}`),
-  uploadDocument: (formData) => {
+  uploadDocument: async (formData) => {
     const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
     return fetch(`${API_BASE}/documents/upload`, {
       method: 'POST',
