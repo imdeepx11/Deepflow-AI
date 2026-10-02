@@ -230,27 +230,13 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
               </button>
 
               <button
+                className="google-login"
                 type="button"
                 onClick={handleDemoLogin}
                 disabled={busy}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justify: 'center',
-                  gap: 8,
-                  width: '100%',
-                  padding: '11px 16px',
-                  borderRadius: 12,
-                  border: '1px solid #10b981',
-                  background: 'rgba(16, 185, 129, 0.08)',
-                  color: '#065f46',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: busy ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
+                style={{ marginTop: 0 }}
               >
-                <Sparkles size={16} color="#10b981" />
+                <Sparkles size={16} />
                 <span>Use Demo Account (Instant Access)</span>
               </button>
             </div>
