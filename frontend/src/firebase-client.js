@@ -6,6 +6,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
+  sendEmailVerification,
   updateProfile,
   signOut,
 } from 'firebase/auth';
@@ -87,6 +88,14 @@ export async function signInWithGoogle() {
  */
 export async function sendFirebasePasswordReset(email) {
   await sendPasswordResetEmail(auth, email);
+}
+
+/**
+ * Send a Firebase email verification link to the current user.
+ */
+export async function sendFirebaseEmailVerification() {
+  if (!auth.currentUser) throw new Error('No authenticated user found.');
+  await sendEmailVerification(auth.currentUser);
 }
 
 /**
