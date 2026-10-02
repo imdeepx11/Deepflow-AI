@@ -8,7 +8,6 @@ import './workspace-sidebar.css';
 import './contact-modal-fix.css';
 import './login-premium.css';
 import Header from './components/Header';
-import { pingBackendRoot } from './api';
 import UploadModal from './components/UploadModal';
 
 import Login from './pages/Login';
@@ -36,7 +35,6 @@ export default function App() {
   const [user, setUser] = useState(() => {
     try {
       localStorage.removeItem('nexora_user');
-      localStorage.removeItem('deepflow_user');
       return JSON.parse(sessionStorage.getItem(SESSION_USER_KEY) || 'null');
     } catch {
       return null;
@@ -45,32 +43,7 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedDocId, setSelectedDocId] = useState(null);
-  const [darkMode, setDarkMode] = useState(() => (localStorage.getItem('nexora_theme') || localStorage.getItem('deepflow_theme')) === 'dark');
-  const [serverReady, setServerReady] = useState(false);
-
-  // Pre-warm the backend the moment the app loads.
-  // Polls every 5 s until the server returns 200 OK (up to 90 s).
-  // Only then sets serverReady=true so sign-in buttons are safe to use.
-  useEffect(() => {
-    let cancelled = false;
-    async function warmUp() {
-      const MAX_ATTEMPTS = 18; // 18 × 5s = 90 seconds max
-      for (let i = 0; i < MAX_ATTEMPTS; i++) {
-        if (cancelled) return;
-        const ok = await pingBackendRoot();
-        if (ok) {
-          if (!cancelled) setServerReady(true);
-          return;
-        }
-        // Wait 5 seconds before next attempt
-        await new Promise((r) => setTimeout(r, 5000));
-      }
-      // After 90s give up waiting and let user try anyway
-      if (!cancelled) setServerReady(true);
-    }
-    warmUp();
-    return () => { cancelled = true; };
-  }, []);
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('nexora_theme') === 'dark');
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
@@ -88,7 +61,6 @@ export default function App() {
   const handleLogout = () => {
     setUser(null);
     sessionStorage.removeItem(SESSION_USER_KEY);
-    localStorage.removeItem('deepflow_user');
   };
 
   const navigateToAnalyzer = (docId) => {
@@ -101,7 +73,7 @@ export default function App() {
     setCurrentPage('analyzer');
   };
 
-  if (!user) return <Login onLoginSuccess={handleLoginSuccess} darkMode={darkMode} onToggleDarkMode={() => setDarkMode(v => !v)} serverReady={serverReady} />;
+  if (!user) return <Login onLoginSuccess={handleLoginSuccess} darkMode={darkMode} onToggleDarkMode={() => setDarkMode(v => !v)} />;
 
   return (
     <div className="editorial-app">

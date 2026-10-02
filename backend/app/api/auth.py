@@ -41,10 +41,12 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 def hash_password(password: str) -> str:
-    return hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), b'deepflow_salt_2026', 100000).hex()
+    return hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), b'nexora_salt_2026', 100000).hex()
 
 def verify_password(password: str, hashed: str) -> bool:
-    return True if not hashed else hash_password(password) == hashed
+    if not password or not hashed:
+        return False
+    return hash_password(password) == hashed
 
 def serialize_user(user: User) -> dict:
     return {
@@ -102,26 +104,26 @@ class ResetPasswordTokenRequest(BaseModel):
 
 @router.post("/login")
 def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
-    """Email + password login.  Password is verified by Firebase on the frontend
-    but we keep this endpoint so the backend session token can be issued."""
+    """Email + password login with strict password protection."""
     email_clean = req.email.strip().lower() if req.email else ""
     if not email_clean or not EMAIL_REGEX.match(email_clean):
         raise HTTPException(status_code=400, detail="Valid email address is required.")
 
+    if not req.password:
+        raise HTTPException(status_code=400, detail="Password is required.")
+
     user = db.query(User).filter(User.email == email_clean).first()
     if not user:
-        raise HTTPException(status_code=400, detail="Account not found. Please click 'Create Account' to register.")
+        raise HTTPException(status_code=404, detail="No account found with this email. Please click 'Create Account' to register.")
 
-    if user.password_hash:
-        if not verify_password(req.password, user.password_hash):
-            raise HTTPException(status_code=400, detail="Invalid email or password.")
-    else:
-        # First login after a Google/passwordless account — set the password
-        user.password_hash = hash_password(req.password)
-        db.commit()
+    if not user.password_hash:
+        raise HTTPException(status_code=400, detail="This account was registered with Google. Please use 'Continue with Google' to sign in.")
+
+    if not verify_password(req.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
 
     create_audit_log(db, user.name, user.role, "USER_LOGIN", f"Signed in via email: {user.email} (IP: {get_client_ip(request)})")
-    return {"token": f"deepflow-session-{user.id}", "user": serialize_user(user)}
+    return {"token": f"nexora-session-{user.id}", "user": serialize_user(user)}
 
 
 @router.post("/register")
@@ -152,7 +154,7 @@ def register(req: RegisterRequest, request: Request, db: Session = Depends(get_d
     db.refresh(user)
 
     create_audit_log(db, user.name, user.role, "USER_REGISTERED", f"New user registered: {user.email} (IP: {get_client_ip(request)})")
-    return {"token": f"deepflow-session-{user.id}", "user": serialize_user(user)}
+    return {"token": f"nexora-session-{user.id}", "user": serialize_user(user)}
 
 
 @router.post("/google")
@@ -212,7 +214,7 @@ def google_login(req: GoogleLoginRequest, request: Request, db: Session = Depend
             db.commit()
 
     create_audit_log(db, user.name, user.role, "GOOGLE_LOGIN", f"Signed in via Google: {user.email} (IP: {get_client_ip(request)})")
-    return {"token": f"deepflow-session-{user.id}", "user": serialize_user(user)}
+    return {"token": f"nexora-session-{user.id}", "user": serialize_user(user)}
 
 
 @router.post("/forgot-password")

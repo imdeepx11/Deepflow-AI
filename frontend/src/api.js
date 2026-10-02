@@ -1,5 +1,7 @@
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
-  || (import.meta.env.DEV ? '/api' : 'https://nexora-backend-30jt.onrender.com/api');
+const rawBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+const API_BASE = rawBase
+  ? (rawBase.endsWith('/api') ? rawBase : `${rawBase}/api`)
+  : (import.meta.env.DEV ? '/api' : 'https://nexora-backend-30jt.onrender.com/api');
 
 // Root of the backend (no /api) — used only for health-check pings
 const BACKEND_ROOT = API_BASE.replace(/\/api$/, '');
@@ -36,14 +38,14 @@ export async function fetchApi(endpoint, options = {}, retryCount = 0) {
     return await res.json();
   } catch (error) {
     const isNetworkError = error.name === 'TypeError' || (error.message && (error.message.includes('fetch') || error.message.includes('Network') || error.message.includes('Failed to fetch')));
-    if (retryCount < 10 && isNetworkError) {
-      console.warn(`API retry ${retryCount + 1}/10 for ${endpoint} — waiting for server to wake up...`);
-      await new Promise((resolve) => setTimeout(resolve, 6000));
+    if (retryCount < 2 && isNetworkError) {
+      console.warn(`API retry ${retryCount + 1}/2 for ${endpoint}...`);
+      await new Promise((resolve) => setTimeout(resolve, 1500));
       return fetchApi(endpoint, options, retryCount + 1);
     }
     console.error(`API Error on ${endpoint}:`, error);
     if (isNetworkError) {
-      throw new Error('Backend server is taking longer than usual to wake up. Please wait 30 seconds and try again.');
+      throw new Error('Backend server is temporarily unreachable. Please check your connection or retry.');
     }
     throw error;
   }

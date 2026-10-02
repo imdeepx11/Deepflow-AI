@@ -6,28 +6,11 @@ from app.database.models import User, Document, DocumentAnalysis, Workflow, Work
 from app.services.ai_service import AIService
 
 def hash_password(password: str) -> str:
-    return hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), b'deepflow_salt_2026', 100000).hex()
+    return hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), b'nexora_salt_2026', 100000).hex()
 
 def seed_db():
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
-
-    # Migrate legacy DeepFlow synthetic accounts to NEXORA before seeding/checking.
-    legacy_demo = db.query(User).filter(User.email == "demo@deepflow.ai").first()
-    nexora_demo = db.query(User).filter(User.email == "demo@nexora.ai").first()
-    if legacy_demo and not nexora_demo:
-        legacy_demo.email = "demo@nexora.ai"
-        db.commit()
-
-    for legacy_user in db.query(User).filter(User.email.like("phone_%@deepflow.ai")).all():
-        nexora_email = legacy_user.email.replace("@deepflow.ai", "@nexora.ai")
-        if not db.query(User).filter(User.email == nexora_email).first():
-            legacy_user.email = nexora_email
-    legacy_google = db.query(User).filter(User.email == "google.user@deepflow.ai").first()
-    nexora_google = db.query(User).filter(User.email == "google.user@nexora.ai").first()
-    if legacy_google and not nexora_google:
-        legacy_google.email = "google.user@nexora.ai"
-    db.commit()
 
     # Check if already seeded
     if db.query(Document).count() > 0:

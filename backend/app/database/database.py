@@ -5,11 +5,6 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 
 DB_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 DEFAULT_DB_PATH = os.path.join(DB_DIR, "nexora.db")
-LEGACY_DB_PATH = os.path.join(DB_DIR, "deepflow.db")
-
-# Keep existing local/Render SQLite data when moving from the legacy filename.
-if not os.path.exists(DEFAULT_DB_PATH) and os.path.exists(LEGACY_DB_PATH):
-    shutil.copy2(LEGACY_DB_PATH, DEFAULT_DB_PATH)
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 

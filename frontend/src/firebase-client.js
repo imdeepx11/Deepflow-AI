@@ -11,12 +11,12 @@ import {
 } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyRjFsQfV6_j8r1DrD-9fTvC3rtOCQHaKeF',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyBjfsQFV6_j0rJGzO-9FfvC3rt0C9HmKeE',
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'nexora-ai-c130d.firebaseapp.com',
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'nexora-ai-c130d',
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'nexora-ai-c130d.firebasestorage.app',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '574809477623',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:574809477623:web:327cafe14dc1cfceed09ef2',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '524889477623',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:524889477623:web:3276afd14dc1cfeed89ef2',
 };
 
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);

@@ -8,22 +8,8 @@ from app.database.seed import seed_db
 from app.api import auth, documents, workflows, analytics, audit_logs, ai_chat, settings
 
 
-# Ensure database tables are created and schema migrations applied
+# Ensure database tables are created
 Base.metadata.create_all(bind=engine)
-try:
-    with engine.connect() as conn:
-        conn.execute(text("ALTER TABLE users ADD COLUMN password_hash VARCHAR"))
-        conn.commit()
-except Exception:
-    pass
-
-try:
-    with engine.connect() as conn:
-        conn.execute(text("ALTER TABLE users ADD COLUMN phone VARCHAR"))
-        conn.commit()
-except Exception:
-    pass
-
 try:
     seed_db()
 except Exception as exc:

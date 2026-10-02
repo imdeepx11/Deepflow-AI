@@ -18,7 +18,7 @@ def send_real_email_code(recipient_email: str, code: str, reset_link: str = None
 
     html_content = f"""
     <div style="font-family: Arial, sans-serif; padding: 24px; max-width: 500px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 16px;">
-        <h2 style="color: #1f4333; margin-top: 0;">DeepFlow AI Password Recovery</h2>
+        <h2 style="color: #1f4333; margin-top: 0;">NEXORA AI Password Recovery</h2>
         <p style="color: #4a5568; font-size: 14px;">Click the button below to set a new password directly, or enter your 6-digit verification code:</p>
         {link_button_html}
         <div style="font-size: 26px; font-weight: bold; letter-spacing: 6px; color: #8e6b32; background: #fdfaf4; padding: 14px; text-align: center; border-radius: 10px; margin: 16px 0;">
@@ -34,9 +34,9 @@ def send_real_email_code(recipient_email: str, code: str, reset_link: str = None
         try:
             headers = {"Authorization": f"Bearer {resend_api_key}", "Content-Type": "application/json"}
             payload = {
-                "from": "DeepFlow AI <onboarding@resend.dev>",
+                "from": "NEXORA AI <onboarding@resend.dev>",
                 "to": [recipient_email],
-                "subject": "Reset Your DeepFlow AI Password",
+                "subject": "Reset Your NEXORA AI Password",
                 "html": html_content
             }
             res = requests.post("https://api.resend.com/emails", json=payload, headers=headers, timeout=10)
@@ -52,11 +52,11 @@ def send_real_email_code(recipient_email: str, code: str, reset_link: str = None
         try:
             base_url = "https://eu1.platform.bird.com" if bird_api_key.startswith("bk_eu1_") else "https://us1.platform.bird.com"
             payload = {
-                "from": {"email": "onboarding@messagebird.dev", "name": "DeepFlow AI"},
+                "from": {"email": "onboarding@messagebird.dev", "name": "NEXORA AI"},
                 "to": [{"email": recipient_email}],
-                "subject": "Reset Your DeepFlow AI Password",
+                "subject": "Reset Your NEXORA AI Password",
                 "html": html_content,
-                "text": f"Your DeepFlow verification code is: {code}. Link: {reset_link or 'N/A'}"
+                "text": f"Your NEXORA verification code is: {code}. Link: {reset_link or 'N/A'}"
             }
             res = requests.post(f"{base_url}/v1/email/messages", json=payload, headers={"Authorization": f"Bearer {bird_api_key}", "Content-Type": "application/json"}, timeout=10)
             if res.status_code in (200, 201, 202):
@@ -75,7 +75,7 @@ def send_real_email_code(recipient_email: str, code: str, reset_link: str = None
             from email.mime.text import MIMEText
             from email.mime.multipart import MIMEMultipart
             msg = MIMEMultipart("alternative")
-            msg["Subject"] = "Reset Your DeepFlow AI Password"
+            msg["Subject"] = "Reset Your NEXORA AI Password"
             msg["From"] = smtp_user
             msg["To"] = recipient_email
             msg.attach(MIMEText(html_content, "html"))
@@ -99,9 +99,9 @@ def send_real_sms_code(phone: str, code: str) -> bool:
     if bird_api_key:
         try:
             payload = {
-                "originator": os.environ.get("BIRD_ORIGINATOR", "DeepFlow"),
+                "originator": os.environ.get("BIRD_ORIGINATOR", "NEXORA"),
                 "recipients": [phone],
-                "body": f"Your DeepFlow AI verification code is: {code}"
+                "body": f"Your NEXORA AI verification code is: {code}"
             }
             res = requests.post("https://rest.messagebird.com/messages", json=payload, headers={"Authorization": f"AccessKey {bird_api_key}", "Content-Type": "application/json"}, timeout=5)
             if res.status_code in (200, 201):
@@ -116,7 +116,7 @@ def send_real_sms_code(phone: str, code: str) -> bool:
         try:
             res = requests.post(
                 f"https://api.twilio.com/2010-04-01/Accounts/{twilio_sid}/Messages.json",
-                data={"From": twilio_phone, "To": phone, "Body": f"Your DeepFlow AI verification code is: {code}"},
+                data={"From": twilio_phone, "To": phone, "Body": f"Your NEXORA AI verification code is: {code}"},
                 auth=(twilio_sid, twilio_auth),
                 timeout=5
             )

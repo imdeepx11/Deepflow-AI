@@ -6,12 +6,12 @@ import {
   signInWithGoogle,
   sendFirebasePasswordReset,
 } from '../firebase-client';
-import { api } from '../api';
+import { api, pingBackendRoot } from '../api';
 import GoogleMark from '../components/GoogleMark';
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode, serverReady }) {
+export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode }) {
   const [authMode, setAuthMode] = useState('signin');
 
   // Form fields
@@ -38,9 +38,27 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode, serv
    * Helper: after Firebase auth, sync user to backend and call onLoginSuccess
    */
   const syncWithBackend = async ({ idToken, displayName, email: userEmail }) => {
-    // Send Firebase ID token to backend which will verify it and return/create user
     const res = await api.loginWithGoogle(idToken, displayName, userEmail);
     onLoginSuccess(res.user);
+  };
+
+  /**
+   * Quick Demo Login
+   */
+  const handleDemoLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const res = await api.login({ email: 'demo@nexora.ai', password: 'demo123' });
+      if (res && res.user) {
+        onLoginSuccess(res.user);
+        return;
+      }
+    } catch (err) {
+      setError(err?.message || 'Demo login failed. Please ensure the backend is running.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   /**
@@ -56,11 +74,23 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode, serv
 
     setLoading(true);
     try {
-      const result = await registerWithEmail(name.trim(), norm, password);
-      await syncWithBackend(result);
+      try {
+        const result = await registerWithEmail(name.trim(), norm, password);
+        await syncWithBackend(result);
+        return;
+      } catch (fbErr) {
+        const res = await api.register({ name: name.trim(), email: norm, password });
+        if (res && res.user) {
+          onLoginSuccess(res.user);
+          return;
+        }
+        throw fbErr;
+      }
     } catch (err) {
-      const msg = firebaseErrorMessage(err);
-      setError(msg || 'Registration failed. Please try again.');
+      const msg = err.message?.includes('already') || err.message?.includes('Password')
+        ? err.message
+        : (firebaseErrorMessage(err) || 'Registration failed. Please try again.');
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -78,11 +108,23 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode, serv
 
     setLoading(true);
     try {
-      const result = await loginWithEmail(norm, password);
-      await syncWithBackend(result);
+      try {
+        const result = await loginWithEmail(norm, password);
+        await syncWithBackend(result);
+        return;
+      } catch (fbErr) {
+        const res = await api.login({ email: norm, password });
+        if (res && res.user) {
+          onLoginSuccess(res.user);
+          return;
+        }
+        throw fbErr;
+      }
     } catch (err) {
-      const msg = firebaseErrorMessage(err);
-      setError(msg || 'Sign in failed. Please check your credentials.');
+      const msg = err.message?.includes('Invalid') || err.message?.includes('password') || err.message?.includes('Account')
+        ? err.message
+        : (firebaseErrorMessage(err) || 'Invalid email or password. Please check your credentials.');
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -99,9 +141,9 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode, serv
       if (result) {
         await syncWithBackend(result);
       }
-      // result === null means user closed the popup — do nothing
     } catch (err) {
-      const msg = firebaseErrorMessage(err);
+      console.error('Google sign-in error:', err);
+      const msg = firebaseErrorMessage(err) || err.message;
       setError(msg || 'Google sign-in failed. Please try again.');
     } finally {
       setGoogleLoading(false);
@@ -137,7 +179,7 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode, serv
     setResetOpen(true);
   };
 
-  const busy = loading || googleLoading || !serverReady;
+  const busy = loading || googleLoading;
 
   return (
     <div className="login-page">
@@ -178,27 +220,40 @@ export default function Login({ onLoginSuccess, darkMode, onToggleDarkMode, serv
             <h2>{authMode === 'signin' ? 'Sign in.' : 'Register.'}</h2>
             <p>{authMode === 'signin' ? 'Use your email or continue with Google.' : 'Create your account to start managing document workflows.'}</p>
 
-            {/* Server warm-up status */}
-            {!serverReady && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 10, background: '#fffbea', border: '1px solid #f5d87a', color: '#7a5c00', fontSize: 12, fontWeight: 600, marginBottom: 12 }}>
-                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#f5a623', animation: 'pulse 1.2s infinite' }} />
-                Waking up server… this takes ~30 seconds on first visit. Please wait before signing in.
-              </div>
-            )}
-            {serverReady && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 10, background: '#eef8f2', border: '1px solid #c8e8d4', color: '#1f6b43', fontSize: 12, fontWeight: 600, marginBottom: 12 }}>
-                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#22c55e' }} />
-                Server is ready — you can sign in now!
-              </div>
-            )}
-
             {error && <div className="login-error" role="alert">{error}</div>}
 
-            {/* Google Sign In */}
-            <button className="google-login" type="button" onClick={googleLogin} disabled={busy}>
-              <GoogleMark />
-              <span>{googleLoading ? 'Connecting to Google…' : 'Continue with Google'}</span>
-            </button>
+            {/* Google & Demo Sign In */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button className="google-login" type="button" onClick={googleLogin} disabled={busy}>
+                <GoogleMark />
+                <span>{googleLoading ? 'Connecting to Google…' : 'Continue with Google'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDemoLogin}
+                disabled={busy}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justify: 'center',
+                  gap: 8,
+                  width: '100%',
+                  padding: '11px 16px',
+                  borderRadius: 12,
+                  border: '1px solid #10b981',
+                  background: 'rgba(16, 185, 129, 0.08)',
+                  color: '#065f46',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: busy ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <Sparkles size={16} color="#10b981" />
+                <span>Use Demo Account (Instant Access)</span>
+              </button>
+            </div>
 
             <div className="login-divider">
               <span>{authMode === 'signin' ? 'or continue with email' : 'or sign up with email'}</span>
@@ -365,8 +420,14 @@ function firebaseErrorMessage(err) {
     'auth/invalid-credential': 'Incorrect email or password. Please try again.',
     'auth/too-many-requests': 'Too many failed attempts. Please wait a moment and try again.',
     'auth/network-request-failed': 'Network error. Please check your connection and try again.',
-    'auth/popup-blocked': 'Google sign-in popup was blocked. Please allow popups for this site.',
+    'auth/popup-blocked': 'Google sign-in popup was blocked. Please allow popups or click "Use Demo Account".',
     'auth/user-disabled': 'This account has been disabled. Please contact support.',
+    'auth/unauthorized-domain': 'This domain is not authorized in Firebase Console.',
+    'auth/operation-not-allowed': 'Google Sign-In is disabled in Firebase Console.',
+    'auth/api-key-not-valid': 'Firebase API key is invalid. Please check configuration.',
   };
+  if (err?.message && err.message.includes('api-key-not-valid')) {
+    return 'Firebase API key is invalid. Please check configuration.';
+  }
   return messages[code] || err?.message || null;
 }
