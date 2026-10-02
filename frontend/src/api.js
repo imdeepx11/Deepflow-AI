@@ -1,3 +1,5 @@
+import { auth } from './firebase-client';
+
 const rawBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 const API_BASE = rawBase
   ? (rawBase.endsWith('/api') ? rawBase : `${rawBase}/api`)
@@ -24,9 +26,11 @@ export async function pingBackendRoot() {
 
 export async function fetchApi(endpoint, options = {}, retryCount = 0) {
   try {
+    const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
     const res = await fetch(`${API_BASE}${endpoint}`, {
       headers: {
         'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options.headers,
       },
       ...options,
@@ -74,8 +78,10 @@ export const api = {
   },
   getDocument: (id) => fetchApi(`/documents/${id}`),
   uploadDocument: (formData) => {
+    const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
     return fetch(`${API_BASE}/documents/upload`, {
       method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
     }).then(async (res) => {
       if (!res.ok) {
