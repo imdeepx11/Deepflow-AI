@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request, BackgroundTasks,
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.database.database import get_db
-from app.database.models import User
+from app.database.models import Organization, User
 from app.services.audit import create_audit_log
 
 # ── Firebase Admin SDK (token verification) ─────────────────────────────────
@@ -49,6 +49,7 @@ def verify_password(password: str, hashed: str) -> bool:
     return hash_password(password) == hashed
 
 def serialize_user(user: User) -> dict:
+    organization = user.organization
     return {
         "id": user.id,
         "name": user.name,
@@ -56,14 +57,39 @@ def serialize_user(user: User) -> dict:
         "phone": user.phone,
         "role": user.role,
         "department": user.department,
-        "avatar": user.avatar
+        "avatar": user.avatar,
+        "organization_id": user.organization_id,
+        "organization_name": organization.name if organization else None,
     }
+
+
+def _workspace_slug(email: str, user_id: int) -> str:
+    local = (email.split("@")[0] if email and "@" in email else "workspace").lower()
+    local = re.sub(r"[^a-z0-9]+", "-", local).strip("-") or "workspace"
+    return f"{local}-{user_id}"
+
+
+def ensure_user_workspace(db: Session, user: User) -> Organization:
+    if user.organization_id and user.organization:
+        return user.organization
+
+    organization = Organization(
+        name=f"{user.name or 'User'}'s Workspace",
+        slug=_workspace_slug(user.email, user.id),
+        settings={}
+    )
+    db.add(organization)
+    db.flush()
+    user.organization_id = organization.id
+    db.commit()
+    db.refresh(user)
+    return organization
 
 def get_client_ip(request: Request) -> str:
     return request.headers.get("X-Forwarded-For", request.client.host if request.client else "unknown")
 
 def require_auth(authorization: str = Header(default=None), db: Session = Depends(get_db)) -> User:
-    """Require a valid, verified Firebase ID token for protected API requests."""
+    """Require a valid Firebase ID token and return the tenant-scoped backend user."""
     if not _FIREBASE_ADMIN_OK or not firebase_auth:
         raise HTTPException(status_code=503, detail="Authentication service is not configured on the backend.")
 
@@ -82,10 +108,24 @@ def require_auth(authorization: str = Header(default=None), db: Session = Depend
     if decoded.get("email_verified") is not True:
         raise HTTPException(status_code=403, detail="Please verify your email address before accessing NEXORA AI.")
 
+    firebase_uid = (decoded.get("uid") or "").strip()
     email = (decoded.get("email") or "").strip().lower()
-    user = db.query(User).filter(User.email == email).first()
+    if not firebase_uid or not email:
+        raise HTTPException(status_code=401, detail="Authenticated identity is incomplete.")
+
+    user = db.query(User).filter(User.firebase_uid == firebase_uid).first()
+    if not user:
+        user = db.query(User).filter(User.email == email).first()
     if not user:
         raise HTTPException(status_code=401, detail="Authenticated user is not registered in NEXORA AI.")
+
+    if user.firebase_uid and user.firebase_uid != firebase_uid:
+        raise HTTPException(status_code=401, detail="Firebase identity does not match this NEXORA account.")
+
+    if not user.firebase_uid:
+        user.firebase_uid = firebase_uid
+
+    ensure_user_workspace(db, user)
     return user
 
 
@@ -229,24 +269,36 @@ def google_login(req: GoogleLoginRequest, request: Request, db: Session = Depend
     # Use name sent by frontend as a better fallback (display names from Google)
     display_name = verified_name or req.name or name_from_email(verified_email)
 
-    user = db.query(User).filter(User.email == verified_email).first()
+    firebase_uid = (decoded.get("uid") or "").strip()
+    user = db.query(User).filter(User.firebase_uid == firebase_uid).first() if firebase_uid else None
+    if not user:
+        user = db.query(User).filter(User.email == verified_email).first()
+
     if not user:
         user = User(
             name=display_name,
             email=verified_email,
+            firebase_uid=firebase_uid or None,
             role="User",
             department="Operations"
         )
         db.add(user)
-        db.commit()
-        db.refresh(user)
+        db.flush()
+        ensure_user_workspace(db, user)
     else:
-        # Update display name if it was previously empty
+        if user.firebase_uid and firebase_uid and user.firebase_uid != firebase_uid:
+            raise HTTPException(status_code=401, detail="Firebase identity does not match this NEXORA account.")
+        user.firebase_uid = firebase_uid or user.firebase_uid
         if not user.name or user.name == "User":
             user.name = display_name
-            db.commit()
+        ensure_user_workspace(db, user)
+        db.commit()
 
-    create_audit_log(db, user.name, user.role, "GOOGLE_LOGIN", f"Signed in via Google: {user.email} (IP: {get_client_ip(request)})")
+    create_audit_log(
+        db, user.name, user.role, "GOOGLE_LOGIN",
+        f"Signed in via Firebase: {user.email} (IP: {get_client_ip(request)})",
+        organization_id=user.organization_id
+    )
     return {"token": f"nexora-session-{user.id}", "user": serialize_user(user)}
 
 
@@ -299,12 +351,5 @@ def reset_password_with_token(req: ResetPasswordTokenRequest, request: Request, 
 
 
 @router.get("/me")
-def me(user_id: int = None, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.id == user_id).first() if user_id else None
-    if not user:
-        user = db.query(User).filter(User.email == "demo@nexora.ai").first()
-    if not user:
-        user = db.query(User).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="No user found.")
-    return serialize_user(user)
+def me(current_user: User = Depends(require_auth)):
+    return serialize_user(current_user)
