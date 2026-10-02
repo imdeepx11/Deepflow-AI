@@ -7,8 +7,9 @@
 <p align="center">AI-powered document intelligence and workflow automation for modern enterprises.</p>
 
 <p align="center">
-  <a href="https://nexora-ai-imdeepx11.vercel.app/"><strong>✨ Vercel Project</strong></a> •
-  <a href="https://nexora-backend-30jt.onrender.com/docs"><strong>🌐 Live API & Swagger Docs</strong></a> •
+  <a href="https://nexora-ai-c130d.web.app/"><strong>🔥 Firebase Hosting</strong></a> •
+  <a href="https://nexora-ai-imdeepx11.vercel.app/"><strong>✨ Vercel</strong></a> •
+  <a href="https://nexora-backend-90jt.onrender.com/docs"><strong>🌐 Live API & Swagger Docs</strong></a> •
   <a href="https://github.com/imdeepx11/Nexora-AI"><strong>📦 GitHub Repository</strong></a>
 </p>
 
@@ -26,9 +27,10 @@
 
 ## 🚀 Live Cloud Deployment Links
 
-- **Frontend Web Application (Vercel)**: [https://nexora-ai-imdeepx11.vercel.app/](https://nexora-ai-imdeepx11.vercel.app/)
-- **Backend API (Render)**: [https://nexora-backend-30jt.onrender.com](https://nexora-backend-30jt.onrender.com)
-- **FastAPI Interactive Docs**: [https://nexora-backend-30jt.onrender.com/docs](https://nexora-backend-30jt.onrender.com/docs)
+- **Frontend (Firebase Hosting)**: [https://nexora-ai-c130d.web.app/](https://nexora-ai-c130d.web.app/)
+- **Frontend (Vercel)**: [https://nexora-ai-imdeepx11.vercel.app/](https://nexora-ai-imdeepx11.vercel.app/)
+- **Backend API (Render)**: [https://nexora-backend-90jt.onrender.com](https://nexora-backend-90jt.onrender.com)
+- **FastAPI Interactive Docs**: [https://nexora-backend-90jt.onrender.com/docs](https://nexora-backend-90jt.onrender.com/docs)
 
 ### 🔑 Instant Demo Account Credentials
 - **Email**: `demo@nexora.ai`
