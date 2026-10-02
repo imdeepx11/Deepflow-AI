@@ -52,6 +52,11 @@ def root():
     }
 
 
+@app.head("/")
+def root_head():
+    return None
+
+
 @app.get("/api/health")
 def health():
     """Lightweight health-check used by frontend warmup ping. No DB query."""
