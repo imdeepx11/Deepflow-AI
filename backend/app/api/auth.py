@@ -4,7 +4,7 @@ import secrets
 import time
 import re
 import os
-from fastapi import APIRouter, HTTPException, Depends, Request, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Depends, Request, BackgroundTasks, Header
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.database.database import get_db
@@ -62,6 +62,33 @@ def serialize_user(user: User) -> dict:
 def get_client_ip(request: Request) -> str:
     return request.headers.get("X-Forwarded-For", request.client.host if request.client else "unknown")
 
+def require_auth(authorization: str = Header(default=None), db: Session = Depends(get_db)) -> User:
+    """Require a valid, verified Firebase ID token for protected API requests."""
+    if not _FIREBASE_ADMIN_OK or not firebase_auth:
+        raise HTTPException(status_code=503, detail="Authentication service is not configured on the backend.")
+
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Authentication required.")
+
+    id_token = authorization.split(" ", 1)[1].strip()
+    if not id_token:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+
+    try:
+        decoded = firebase_auth.verify_id_token(id_token)
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or expired authentication token.")
+
+    if decoded.get("email_verified") is not True:
+        raise HTTPException(status_code=403, detail="Please verify your email address before accessing NEXORA AI.")
+
+    email = (decoded.get("email") or "").strip().lower()
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Authenticated user is not registered in NEXORA AI.")
+    return user
+
+
 def name_from_email(email: str) -> str:
     if not email or "@" not in email:
         return "User"
@@ -104,7 +131,9 @@ class ResetPasswordTokenRequest(BaseModel):
 
 @router.post("/login")
 def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
-    """Email + password login with strict password protection."""
+    """Legacy login endpoint; Firebase is the only production authentication source."""
+    if os.environ.get("ALLOW_LEGACY_EMAIL_AUTH", "false").lower() != "true":
+        raise HTTPException(status_code=410, detail="Legacy email login is disabled. Use Firebase authentication.")
     email_clean = req.email.strip().lower() if req.email else ""
     if not email_clean or not EMAIL_REGEX.match(email_clean):
         raise HTTPException(status_code=400, detail="Valid email address is required.")
@@ -128,7 +157,9 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
 
 @router.post("/register")
 def register(req: RegisterRequest, request: Request, db: Session = Depends(get_db)):
-    """Create a new account with email + password."""
+    """Legacy registration endpoint; Firebase is the only production authentication source."""
+    if os.environ.get("ALLOW_LEGACY_EMAIL_AUTH", "false").lower() != "true":
+        raise HTTPException(status_code=410, detail="Legacy registration is disabled. Use Firebase authentication.")
     if not req.name or not req.name.strip():
         raise HTTPException(status_code=400, detail="Full name is required.")
     email_clean = req.email.strip().lower() if req.email else ""
@@ -176,6 +207,8 @@ def google_login(req: GoogleLoginRequest, request: Request, db: Session = Depend
     if _FIREBASE_ADMIN_OK and firebase_auth and req.id_token:
         try:
             decoded = firebase_auth.verify_id_token(req.id_token)
+            if decoded.get("email_verified") is not True:
+                raise HTTPException(status_code=403, detail="Please verify your email address before signing in.")
             verified_email = (decoded.get("email") or "").strip().lower() or None
             verified_name = decoded.get("name") or decoded.get("display_name") or None
         except Exception as e:
@@ -185,10 +218,10 @@ def google_login(req: GoogleLoginRequest, request: Request, db: Session = Depend
                 detail=f"Google sign-in failed: invalid or expired token. Please try again. ({e})"
             )
     else:
-        # firebase-admin not configured — trust the values passed from frontend
-        # (acceptable only in local dev; in production configure GOOGLE_APPLICATION_CREDENTIALS)
-        verified_email = (req.email or "").strip().lower() or None
-        verified_name = req.name
+        raise HTTPException(
+            status_code=503,
+            detail="Firebase Admin authentication is not configured. Contact the administrator."
+        )
 
     if not verified_email:
         raise HTTPException(status_code=400, detail="Could not retrieve email from Google account.")
