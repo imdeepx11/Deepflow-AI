@@ -221,10 +221,16 @@ def register(req: RegisterRequest, request: Request, db: Session = Depends(get_d
         department="Operations"
     )
     db.add(user)
+    db.flush()
+    ensure_user_workspace(db, user)
     db.commit()
     db.refresh(user)
 
-    create_audit_log(db, user.name, user.role, "USER_REGISTERED", f"New user registered: {user.email} (IP: {get_client_ip(request)})")
+    create_audit_log(
+        db, user.name, user.role, "USER_REGISTERED",
+        f"New user registered: {user.email} (IP: {get_client_ip(request)})",
+        organization_id=user.organization_id
+    )
     return {"token": f"nexora-session-{user.id}", "user": serialize_user(user)}
 
 
