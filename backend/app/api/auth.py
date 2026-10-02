@@ -126,6 +126,7 @@ def require_auth(authorization: str = Header(default=None), db: Session = Depend
         user.firebase_uid = firebase_uid
 
     ensure_user_workspace(db, user)
+    db.commit()
     return user
 
 
