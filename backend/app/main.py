@@ -3,13 +3,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
-from app.database.database import engine, Base
+from app.database.database import engine, Base, ensure_schema
 from app.database.seed import seed_db
 from app.api import auth, documents, workflows, analytics, audit_logs, ai_chat, settings
 
 
-# Ensure database tables are created
-Base.metadata.create_all(bind=engine)
+# Ensure database tables and tenant columns exist before seeding.
+ensure_schema()
 try:
     seed_db()
 except Exception as exc:
