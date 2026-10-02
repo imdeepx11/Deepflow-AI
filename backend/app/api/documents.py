@@ -254,7 +254,8 @@ def analyze_document(doc_id: int, db: Session = Depends(get_db), current_user: U
         name=f"{analysis.document_type} Routing Workflow",
         description=f"Automated AI routing workflow for {doc.original_filename}",
         status="Active",
-        current_step_index=active_idx
+        current_step_index=active_idx,
+        organization_id=current_user.organization_id
     )
     db.add(wf)
     db.commit()
@@ -299,8 +300,8 @@ def approve_document(doc_id: int, req: ApprovalRequest, db: Session = Depends(ge
     appr = Approval(
         document_id=doc.id,
         action=req.action,
-        approver_name=req.approver_name,
-        approver_role=req.approver_role,
+        approver_name=current_user.name,
+        approver_role=current_user.role,
         comments=req.comments or f"{req.action} decision submitted via decision modal."
     )
     db.add(appr)
@@ -324,8 +325,8 @@ def approve_document(doc_id: int, req: ApprovalRequest, db: Session = Depends(ge
 
     action_label = "Approved Document" if req.action == "Approve" else "Rejected Document" if req.action == "Reject" else "Review Requested"
     create_audit_log(
-        db, user_name=req.approver_name, user_role=req.approver_role, action=action_label,
-        details=f"{action_label} by {req.approver_name} ({req.approver_role}). Comments: {req.comments or 'None'}",
+        db, user_name=current_user.name, user_role=current_user.role, action=action_label,
+        details=f"{action_label} by {current_user.name} ({current_user.role}). Comments: {req.comments or 'None'}",
         status="Success" if req.action == "Approve" else "Warning",
         document_name=doc.original_filename,
         workflow_name=doc.workflows[0].name if doc.workflows else None,
