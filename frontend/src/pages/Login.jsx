@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ArrowRight, CheckCircle2, Eye, EyeOff, Lock, Mail, Moon, Sparkles, Sun, User as UserIcon } from 'lucide-react';
 import {
   registerWithEmail,
@@ -8,7 +8,7 @@ import {
   sendFirebaseEmailVerification,
   firebaseSignOut,
 } from '../firebase-client';
-import { api, pingBackendRoot } from '../api';
+import { api } from '../api';
 import GoogleMark from '../components/GoogleMark';
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -380,7 +380,7 @@ function firebaseErrorMessage(err) {
     'auth/invalid-credential': 'Incorrect email or password. Please try again.',
     'auth/too-many-requests': 'Too many failed attempts. Please wait a moment and try again.',
     'auth/network-request-failed': 'Network error. Please check your connection and try again.',
-    'auth/popup-blocked': 'Google sign-in popup was blocked. Please allow popups or click "Use Demo Account".',
+    'auth/popup-blocked': 'Google sign-in popup was blocked. Please allow popups or allow the popup and try again.',
     'auth/user-disabled': 'This account has been disabled. Please contact support.',
     'auth/unauthorized-domain': 'This domain is not authorized in Firebase Console.',
     'auth/operation-not-allowed': 'Google Sign-In is disabled in Firebase Console.',
