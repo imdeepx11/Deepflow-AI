@@ -29,7 +29,7 @@ try:
         firebase_admin.initialize_app(credentials.Certificate(_cred_dict))
         _FIREBASE_ADMIN_OK = True
     elif not _creds_json:
-        print("[auth] FIREBASE_CREDENTIALS not set — skipping Firebase Admin init (trusting frontend tokens).")
+        print("[auth] FIREBASE_CREDENTIALS not set — Firebase Admin authentication is unavailable.")
 except Exception as _fb_err:
     print(f"[auth] firebase-admin init skipped: {_fb_err}")
     _FIREBASE_ADMIN_OK = False
