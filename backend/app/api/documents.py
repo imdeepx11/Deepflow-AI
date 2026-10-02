@@ -4,6 +4,7 @@ import shutil
 from datetime import datetime
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
@@ -202,6 +203,28 @@ async def upload_document(
         document_name=doc.original_filename, organization_id=current_user.organization_id
     )
     return {"message": "Document uploaded successfully", "id": doc.id}
+
+
+@router.get("/{doc_id}/file")
+def download_document_file(
+    doc_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_auth)
+):
+    doc = db.query(Document).filter(
+        Document.id == doc_id,
+        Document.organization_id == current_user.organization_id
+    ).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    if not doc.storage_path or not os.path.isfile(doc.storage_path):
+        raise HTTPException(status_code=404, detail="Document file is no longer available")
+
+    return FileResponse(
+        path=doc.storage_path,
+        filename=doc.original_filename,
+        media_type="application/octet-stream"
+    )
 
 
 @router.post("/{doc_id}/analyze")
