@@ -7,7 +7,9 @@ from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.database.models import Workflow, WorkflowStep, Document, AuditLog
 
-router = APIRouter(prefix="/api/workflows", tags=["workflows"])
+from app.api.auth import require_auth
+
+router = APIRouter(prefix="/api/workflows", tags=["workflows"], dependencies=[Depends(require_auth)])
 
 class StepSchema(BaseModel):
     step_name: str
