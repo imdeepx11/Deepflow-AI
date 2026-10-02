@@ -414,3 +414,32 @@
   .hero-title { font-size:56px; }
   .editorial-main { padding-top:20px; }
 }
+
+
+/* Password visibility control */
+.password-field { position: relative; }
+.password-field input { padding-right: 42px !important; }
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 0;
+  border-radius: 8px;
+}
+.password-toggle:hover {
+  color: var(--ink);
+  background: rgba(170, 155, 135, 0.12);
+}
+.password-toggle:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
